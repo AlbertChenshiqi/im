@@ -1,0 +1,30 @@
+# IM 项目 Go 构建基础镜像（本地构建一次，后续 make build-images 复用）
+#
+# 构建：
+#   make docker-base-build
+# 或：
+#   docker build --target toolchain -t im-go-base:1.24 -f deploy/Dockerfile.base .
+#   docker build --target deps      -t im-go-base:deps    -f deploy/Dockerfile.base .
+#   docker build --target runtime   -t im-go-base:runtime -f deploy/Dockerfile.base .
+
+# 工具链层：仅 golang + git（约拉取一次官方镜像）
+FROM golang:1.24-alpine AS toolchain
+
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
+    && apk add --no-cache git ca-certificates
+
+ENV CGO_ENABLED=0 \
+    GOPROXY=https://goproxy.cn,direct
+
+WORKDIR /build
+
+# 依赖缓存层：go.mod 变更后需重新 make docker-base-build
+FROM toolchain AS deps
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 运行层：alpine:3.20 + ca-certificates tzdata（约拉取一次）
+FROM alpine:3.20 AS runtime
+
+RUN apk add --no-cache ca-certificates tzdata

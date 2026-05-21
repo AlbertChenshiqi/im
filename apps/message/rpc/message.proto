@@ -1,0 +1,28 @@
+syntax = "proto3";
+package message;
+option go_package = "./message";
+
+message SendReq {
+  int64 sender_id = 1;
+  string conv_id = 2;
+  string content = 3;
+  string msg_type = 4;
+  string client_msg_id = 5;
+}
+message SendResp { int64 msg_id = 1; int64 seq = 2; }
+
+message ListMessagesReq {
+  string conv_id = 1;
+  int64 before_seq = 2;
+  int32 limit = 3;
+}
+message MessageItem {
+  int64 id = 1; string conv_id = 2; int64 sender_id = 3; int64 seq = 4;
+  string msg_type = 5; string content = 6;
+}
+message ListMessagesResp { repeated MessageItem messages = 1; }
+
+service Message {
+  rpc Send(SendReq) returns (SendResp);
+  rpc ListMessages(ListMessagesReq) returns (ListMessagesResp);
+}

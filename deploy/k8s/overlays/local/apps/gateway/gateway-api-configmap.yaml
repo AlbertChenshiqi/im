@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-api-config
+  labels:
+    app.kubernetes.io/name: gateway-api
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: gateway
+data:
+  gateway-api.yaml: |
+    Name: gateway-api
+    Host: 0.0.0.0
+    Port: 10000
+    MessageRpc:
+      Endpoints:
+        - message-rpc:20500
+    Redis:
+      Addr: redis:6379
+    Kafka:
+      Brokers:
+        - kafka:9092
+    WebSocket:
+      OnlineTTL: 300
+      HeartbeatInterval: 60
+      HeartbeatMaxMiss: 3
+      MaxMessageBytes: 65536
+      ConnectionMode: multi
+      AllowedOrigins:
+        - "*"
+    Auth:
+      AccessSecret: dev-secret-change-in-production
+    Log:
+      ServiceName: gateway-api
+      Mode: console
+      Level: info
+      Stat: false

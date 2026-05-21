@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-rpc
+  labels:
+    app: notification-rpc
+    app.kubernetes.io/name: notification-rpc
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: notification
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-rpc
+  template:
+    metadata:
+      labels:
+        app: notification-rpc
+        app.kubernetes.io/name: notification-rpc
+        app.kubernetes.io/component: notification
+    spec:
+      containers:
+      - name: notification-rpc
+        image: im/notification/notification-rpc:dev
+        imagePullPolicy: IfNotPresent
+        args: ["-f", "/etc/im/notification/notification-rpc.yaml"]
+        ports:
+        - containerPort: 20600
+          name: http
+        readinessProbe:
+          tcpSocket:
+            port: 20600
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/notification
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: notification-rpc-config

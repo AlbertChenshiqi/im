@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-rpc-config
+  labels:
+    app.kubernetes.io/name: user-rpc
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: user
+data:
+  user-rpc.yaml: |
+    Name: user.rpc
+    ListenOn: 0.0.0.0:20100
+    JwtAuth:
+      AccessSecret: dev-secret-change-in-production
+    Postgres:
+      DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+    Log:
+      ServiceName: user-rpc
+      Mode: console
+      Level: info
+      Stat: false

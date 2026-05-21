@@ -1,0 +1,8 @@
+Name: push-api
+Host: 0.0.0.0
+Port: 10700
+Auth:
+  AccessSecret: dev-secret-change-in-production
+  AccessExpire: 604800
+Redis:
+  Addr: localhost:6379

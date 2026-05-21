@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package user;
+option go_package = "./user";
+
+message ValidateTokenReq {
+  string token = 1;
+}
+
+message ValidateTokenResp {
+  int64 user_id = 1;
+  bool ok = 2;
+}
+
+message GetUserReq {
+  int64 id = 1;
+}
+
+message UserInfo {
+  int64 id = 1;
+  string username = 2;
+  string nickname = 3;
+  string avatar_url = 4;
+}
+
+message GetUserResp {
+  UserInfo user = 1;
+}
+
+message BatchGetUsersReq {
+  repeated int64 ids = 1;
+}
+
+message BatchGetUsersResp {
+  repeated UserInfo users = 1;
+}
+
+service User {
+  rpc ValidateToken(ValidateTokenReq) returns (ValidateTokenResp);
+  rpc GetUser(GetUserReq) returns (GetUserResp);
+  rpc BatchGetUsers(BatchGetUsersReq) returns (BatchGetUsersResp);
+}

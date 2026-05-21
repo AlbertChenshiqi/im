@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-rpc
+  labels:
+    app: user-rpc
+    app.kubernetes.io/name: user-rpc
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: user
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-rpc
+  template:
+    metadata:
+      labels:
+        app: user-rpc
+        app.kubernetes.io/name: user-rpc
+        app.kubernetes.io/component: user
+    spec:
+      containers:
+      - name: user-rpc
+        image: im/user/user-rpc:dev
+        imagePullPolicy: IfNotPresent
+        args: ["-f", "/etc/im/user/user-rpc.yaml"]
+        ports:
+        - containerPort: 20100
+          name: http
+        readinessProbe:
+          tcpSocket:
+            port: 20100
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/user
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: user-rpc-config

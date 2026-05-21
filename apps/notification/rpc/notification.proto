@@ -1,0 +1,12 @@
+syntax = "proto3";
+package notification;
+option go_package = "./notification";
+
+message SendSystemReq {
+  int64 user_id = 1; string title = 2; string body = 3; string category = 4;
+}
+message SendSystemResp { int64 id = 1; }
+
+service Notification {
+  rpc SendSystem(SendSystemReq) returns (SendSystemResp);
+}

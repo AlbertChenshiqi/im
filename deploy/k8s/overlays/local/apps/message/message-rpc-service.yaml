@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: message-rpc
+  labels:
+    app: message-rpc
+    app.kubernetes.io/name: message-rpc
+    app.kubernetes.io/component: message
+spec:
+  selector:
+    app: message-rpc
+  ports:
+  - port: 20500
+    targetPort: 20500
+    name: http

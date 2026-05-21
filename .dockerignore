@@ -1,0 +1,8 @@
+.git
+.cursor
+bin/
+**/*.md
+**/.DS_Store
+**/agent-transcripts
+deploy/k8s/overlays/local/generated/
+deploy/k8s/overlays/local/config/

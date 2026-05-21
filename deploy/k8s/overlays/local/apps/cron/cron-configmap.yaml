@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cron-config
+  labels:
+    app.kubernetes.io/name: cron
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: cron
+data:
+  cron.yaml: |
+    Name: cron
+    HealthPort: 10800
+    Postgres:
+      DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+    Redis:
+      Addr: redis:6379
+    Kafka:
+      Brokers:
+        - kafka:9092
+    Cron:
+      InboxMergeMs: 100
+      OfflineMergeSec: 10
+      MemberBatch: 500

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-rpc
+  labels:
+    app: message-rpc
+    app.kubernetes.io/name: message-rpc
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: message
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-rpc
+  template:
+    metadata:
+      labels:
+        app: message-rpc
+        app.kubernetes.io/name: message-rpc
+        app.kubernetes.io/component: message
+    spec:
+      containers:
+      - name: message-rpc
+        image: im/message/message-rpc:dev
+        imagePullPolicy: IfNotPresent
+        args: ["-f", "/etc/im/message/message-rpc.yaml"]
+        ports:
+        - containerPort: 20500
+          name: http
+        readinessProbe:
+          tcpSocket:
+            port: 20500
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/message
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: message-rpc-config

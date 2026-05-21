@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: push-rpc-config
+  labels:
+    app.kubernetes.io/name: push-rpc
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: push
+data:
+  push-rpc.yaml: |
+    Name: push.rpc
+    ListenOn: 0.0.0.0:20700
+    Postgres:
+      DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+    Log:
+      ServiceName: push-rpc
+      Mode: console
+      Level: info
+      Stat: false
+    RedisStore:
+      Addr: redis:6379

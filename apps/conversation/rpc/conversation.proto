@@ -1,0 +1,16 @@
+syntax = "proto3";
+package conversation;
+option go_package = "./conversation";
+
+message EnsureDirectReq { int64 user_a = 1; int64 user_b = 2; }
+message EnsureDirectResp { string conv_id = 1; }
+
+message UpdateMetaReq {
+  string conv_id = 1; int64 seq = 2; int64 msg_id = 3; string preview = 4;
+}
+message UpdateMetaResp {}
+
+service Conversation {
+  rpc EnsureDirect(EnsureDirectReq) returns (EnsureDirectResp);
+  rpc UpdateMeta(UpdateMetaReq) returns (UpdateMetaResp);
+}

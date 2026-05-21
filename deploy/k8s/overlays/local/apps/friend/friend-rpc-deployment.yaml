@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: friend-rpc
+  labels:
+    app: friend-rpc
+    app.kubernetes.io/name: friend-rpc
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: friend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: friend-rpc
+  template:
+    metadata:
+      labels:
+        app: friend-rpc
+        app.kubernetes.io/name: friend-rpc
+        app.kubernetes.io/component: friend
+    spec:
+      containers:
+      - name: friend-rpc
+        image: im/friend/friend-rpc:dev
+        imagePullPolicy: IfNotPresent
+        args: ["-f", "/etc/im/friend/friend-rpc.yaml"]
+        ports:
+        - containerPort: 20200
+          name: http
+        readinessProbe:
+          tcpSocket:
+            port: 20200
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/friend
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: friend-rpc-config

@@ -1,0 +1,14 @@
+syntax = "proto3";
+package friend;
+option go_package = "./friend";
+
+message AreFriendsReq { int64 user_a = 1; int64 user_b = 2; }
+message AreFriendsResp { bool ok = 1; }
+
+message AcceptFriendReq { int64 from_user_id = 1; int64 to_user_id = 2; }
+message AcceptFriendResp { string conv_id = 1; }
+
+service Friend {
+  rpc AreFriends(AreFriendsReq) returns (AreFriendsResp);
+  rpc AcceptFriend(AcceptFriendReq) returns (AcceptFriendResp);
+}

@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+commonLabels:
+  app.kubernetes.io/part-of: im
+  app.kubernetes.io/component: group
+resources:
+  - group-api-configmap.yaml
+  - group-api-deployment.yaml
+  - group-api-service.yaml
+  - group-rpc-configmap.yaml
+  - group-rpc-deployment.yaml
+  - group-rpc-service.yaml

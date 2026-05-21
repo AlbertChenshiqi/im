@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-api-config
+  labels:
+    app.kubernetes.io/name: notification-api
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: notification
+data:
+  notification-api.yaml: |
+    Name: notification-api
+    Host: 0.0.0.0
+    Port: 10600
+    Auth:
+      AccessSecret: dev-secret-change-in-production
+      AccessExpire: 604800
+    
+    Postgres:
+      DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+    Log:
+      ServiceName: notification-api
+      Mode: console
+      Level: info
+      Stat: false

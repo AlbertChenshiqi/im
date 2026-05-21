@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+commonLabels:
+  app.kubernetes.io/part-of: im
+  app.kubernetes.io/component: notification
+resources:
+  - notification-api-configmap.yaml
+  - notification-api-deployment.yaml
+  - notification-api-service.yaml
+  - notification-rpc-configmap.yaml
+  - notification-rpc-deployment.yaml
+  - notification-rpc-service.yaml

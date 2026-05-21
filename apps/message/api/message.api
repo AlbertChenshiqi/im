@@ -1,0 +1,33 @@
+syntax = "v1"
+
+info (
+	title: "Message API"
+)
+
+type Message {
+	Id       int64  `json:"id"`
+	ConvId   string `json:"conv_id"`
+	SenderId int64  `json:"sender_id"`
+	Seq      int64  `json:"seq"`
+	MsgType  string `json:"msg_type"`
+	Content  string `json:"content"`
+}
+
+type ListMessagesReq {
+	Id        string `path:"id"`
+	BeforeSeq int64  `form:"before_seq,optional"`
+	Limit     int    `form:"limit,optional"`
+}
+
+type ListMessagesResp {
+	Messages []Message `json:"messages"`
+}
+
+@server (
+	prefix: /v1
+	jwt:    Auth
+)
+service message-api {
+	@handler listMessages
+	get /conversations/:id/messages (ListMessagesReq) returns (ListMessagesResp)
+}

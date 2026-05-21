@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-rpc-config
+  labels:
+    app.kubernetes.io/name: notification-rpc
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: notification
+data:
+  notification-rpc.yaml: |
+    Name: notification.rpc
+    ListenOn: 0.0.0.0:20600
+    Postgres:
+      DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+    Log:
+      ServiceName: notification-rpc
+      Mode: console
+      Level: info
+      Stat: false
+    Kafka:
+      Brokers:
+        - kafka:9092

@@ -1,0 +1,45 @@
+syntax = "v1"
+
+info (
+	title: "Friend API"
+)
+
+type User {
+	Id        int64  `json:"id"`
+	Username  string `json:"username"`
+	Nickname  string `json:"nickname"`
+	AvatarUrl string `json:"avatar_url"`
+}
+
+type FriendReq {
+	UserId int64 `json:"user_id"`
+}
+
+type AcceptResp {
+	Status string `json:"status"`
+	ConvId string `json:"conv_id"`
+}
+
+type FriendsResp {
+	Friends []User `json:"friends"`
+}
+
+type CheckResp {
+	Friends bool `json:"friends"`
+}
+
+@server (
+	prefix: /v1
+	jwt:    Auth
+)
+service friend-api {
+	@handler request
+	post /friends/request (FriendReq) returns (AcceptResp)
+
+	@handler accept
+	post /friends/accept (FriendReq) returns (AcceptResp)
+
+	@handler list
+	get /friends returns (FriendsResp)
+}
+

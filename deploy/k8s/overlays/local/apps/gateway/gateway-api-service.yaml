@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-api
+  labels:
+    app: gateway-api
+    app.kubernetes.io/name: gateway-api
+    app.kubernetes.io/component: gateway
+spec:
+  selector:
+    app: gateway-api
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  type: NodePort
+  ports:
+  - port: 10000
+    targetPort: 10000
+    nodePort: 30000
+    name: http

@@ -1,0 +1,18 @@
+syntax = "v1"
+
+info (
+	title: "Gateway WS"
+)
+
+type HealthResp {
+	Status string `json:"status"`
+}
+
+@server (
+	prefix: /v1
+)
+service gateway-api {
+	@handler health
+	get /health returns (HealthResp)
+}
+

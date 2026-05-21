@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: friend-rpc
+  labels:
+    app: friend-rpc
+    app.kubernetes.io/name: friend-rpc
+    app.kubernetes.io/component: friend
+spec:
+  selector:
+    app: friend-rpc
+  ports:
+  - port: 20200
+    targetPort: 20200
+    name: http

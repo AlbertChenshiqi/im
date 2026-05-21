@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: push-api
+  labels:
+    app: push-api
+    app.kubernetes.io/name: push-api
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: push
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: push-api
+  template:
+    metadata:
+      labels:
+        app: push-api
+        app.kubernetes.io/name: push-api
+        app.kubernetes.io/component: push
+    spec:
+      containers:
+      - name: push-api
+        image: im/push/push-api:dev
+        imagePullPolicy: IfNotPresent
+        args: ["-f", "/etc/im/push/push-api.yaml"]
+        ports:
+        - containerPort: 10700
+          name: http
+        readinessProbe:
+          tcpSocket:
+            port: 10700
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/push
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: push-api-config

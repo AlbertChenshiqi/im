@@ -1,0 +1,18 @@
+syntax = "v1"
+
+info (
+	title: "Push API"
+)
+
+type StatusResp {
+	Status string `json:"status"`
+}
+
+@server (
+	prefix: /v1
+	jwt:    Auth
+)
+service push-api {
+	@handler setOnline
+	post /push/online returns (StatusResp)
+}

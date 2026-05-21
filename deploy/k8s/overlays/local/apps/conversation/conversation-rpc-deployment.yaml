@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conversation-rpc
+  labels:
+    app: conversation-rpc
+    app.kubernetes.io/name: conversation-rpc
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: conversation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: conversation-rpc
+  template:
+    metadata:
+      labels:
+        app: conversation-rpc
+        app.kubernetes.io/name: conversation-rpc
+        app.kubernetes.io/component: conversation
+    spec:
+      containers:
+      - name: conversation-rpc
+        image: im/conversation/conversation-rpc:dev
+        imagePullPolicy: IfNotPresent
+        args: ["-f", "/etc/im/conversation/conversation-rpc.yaml"]
+        ports:
+        - containerPort: 20400
+          name: http
+        readinessProbe:
+          tcpSocket:
+            port: 20400
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/conversation
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: conversation-rpc-config

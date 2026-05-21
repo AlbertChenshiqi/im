@@ -1,0 +1,25 @@
+# 单服务容器镜像（供 K8s / kind 使用，非 Compose）
+# 构建：make build-images
+# 示例：
+#   docker build -f deploy/Dockerfile.service \
+#     --build-arg SERVICE_PKG=./apps/user/api --build-arg BIN_NAME=user-api \
+#     -t im/user/user-api:dev .
+
+ARG GO_BASE_IMAGE=im-go-base:deps
+ARG RUNTIME_BASE_IMAGE=im-go-base:runtime
+
+FROM ${GO_BASE_IMAGE} AS builder
+
+ARG SERVICE_PKG=./apps/user/api
+ARG BIN_NAME=user-api
+
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/${BIN_NAME} ${SERVICE_PKG}
+
+FROM ${RUNTIME_BASE_IMAGE}
+
+ARG BIN_NAME=user-api
+COPY --from=builder /out/${BIN_NAME} /usr/local/bin/${BIN_NAME}

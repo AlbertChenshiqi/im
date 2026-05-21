@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-api-config
+  labels:
+    app.kubernetes.io/name: user-api
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: user
+data:
+  user-api.yaml: |
+    Name: user-api
+    Host: 0.0.0.0
+    Port: 10100
+    Auth:
+      AccessSecret: dev-secret-change-in-production
+      AccessExpire: 604800
+      DevMode: true
+    Postgres:
+      DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+    Log:
+      ServiceName: user-api
+      Mode: console
+      Level: info
+      Stat: false

@@ -1,0 +1,14 @@
+Name: group-api
+Host: 0.0.0.0
+Port: 10300
+Auth:
+  AccessSecret: dev-secret-change-in-production
+  AccessExpire: 604800
+  DevMode: true
+Postgres:
+  DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+Log:
+  ServiceName: group-api
+  Mode: console
+  Level: info
+  Stat: false

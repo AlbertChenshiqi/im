@@ -1,0 +1,14 @@
+syntax = "proto3";
+package push;
+option go_package = "./push";
+
+message SetOnlineReq { int64 user_id = 1; }
+message SetOnlineResp {}
+
+message GroupSubscribeReq { int64 user_id = 1; int64 group_id = 2; }
+message GroupSubscribeResp {}
+
+service Push {
+  rpc SetOnline(SetOnlineReq) returns (SetOnlineResp);
+  rpc GroupSubscribe(GroupSubscribeReq) returns (GroupSubscribeResp);
+}

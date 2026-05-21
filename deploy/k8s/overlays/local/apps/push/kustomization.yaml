@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+commonLabels:
+  app.kubernetes.io/part-of: im
+  app.kubernetes.io/component: push
+resources:
+  - push-api-configmap.yaml
+  - push-api-deployment.yaml
+  - push-api-service.yaml
+  - push-rpc-configmap.yaml
+  - push-rpc-deployment.yaml
+  - push-rpc-service.yaml

@@ -1,0 +1,69 @@
+syntax = "v1"
+
+info (
+	title: "Group API"
+)
+
+type Group {
+	Id         int64  `json:"id"`
+	Name       string `json:"name"`
+	OwnerId    int64  `json:"owner_id"`
+	MaxMembers int    `json:"max_members"`
+	Notice     string `json:"notice"`
+}
+
+type CreateGroupReq {
+	Name      string  `json:"name"`
+	MemberIds []int64 `json:"member_ids,optional"`
+}
+
+type CreateGroupResp {
+	Group  Group  `json:"group"`
+	ConvId string `json:"conv_id"`
+}
+
+type AddMembersReq {
+	UserIds []int64 `json:"user_ids"`
+}
+
+type ListMembersResp {
+	UserIds    []int64 `json:"user_ids"`
+	NextCursor int64   `json:"next_cursor"`
+}
+
+type StatusResp {
+	Status string `json:"status"`
+}
+
+type IdPathReq {
+	Id int64 `path:"id"`
+}
+
+type ListMembersReq {
+	Id     int64 `path:"id"`
+	Cursor int64 `form:"cursor,optional"`
+}
+
+type AddMembersPathReq {
+	Id      int64   `path:"id"`
+	UserIds []int64 `json:"user_ids"`
+}
+
+@server (
+	prefix: /v1
+	jwt:    Auth
+)
+service group-api {
+	@handler createGroup
+	post /groups (CreateGroupReq) returns (CreateGroupResp)
+
+	@handler getGroup
+	get /groups/:id (IdPathReq) returns (Group)
+
+	@handler addMembers
+	post /groups/:id/members (AddMembersPathReq) returns (StatusResp)
+
+	@handler listMembers
+	get /groups/:id/members (ListMembersReq) returns (ListMembersResp)
+}
+

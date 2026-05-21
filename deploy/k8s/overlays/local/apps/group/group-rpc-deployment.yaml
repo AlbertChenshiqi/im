@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: group-rpc
+  labels:
+    app: group-rpc
+    app.kubernetes.io/name: group-rpc
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: group
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: group-rpc
+  template:
+    metadata:
+      labels:
+        app: group-rpc
+        app.kubernetes.io/name: group-rpc
+        app.kubernetes.io/component: group
+    spec:
+      containers:
+      - name: group-rpc
+        image: im/group/group-rpc:dev
+        imagePullPolicy: IfNotPresent
+        args: ["-f", "/etc/im/group/group-rpc.yaml"]
+        ports:
+        - containerPort: 20300
+          name: http
+        readinessProbe:
+          tcpSocket:
+            port: 20300
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/group
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: group-rpc-config

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: conversation-api
+  labels:
+    app: conversation-api
+    app.kubernetes.io/name: conversation-api
+    app.kubernetes.io/component: conversation
+spec:
+  selector:
+    app: conversation-api
+  type: NodePort
+  ports:
+  - port: 10400
+    targetPort: 10400
+    nodePort: 30400
+    name: http

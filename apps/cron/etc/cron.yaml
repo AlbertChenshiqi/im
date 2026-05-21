@@ -1,0 +1,17 @@
+Name: cron
+HealthPort: 10800
+
+Postgres:
+  DSN: postgres://im:im@localhost:5432/im?sslmode=disable
+
+Redis:
+  Addr: localhost:6379
+
+Kafka:
+  Brokers:
+    - localhost:9092
+
+Cron:
+  InboxMergeMs: 100
+  OfflineMergeSec: 10
+  MemberBatch: 500

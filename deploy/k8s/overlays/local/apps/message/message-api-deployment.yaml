@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-api
+  labels:
+    app: message-api
+    app.kubernetes.io/name: message-api
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: message
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-api
+  template:
+    metadata:
+      labels:
+        app: message-api
+        app.kubernetes.io/name: message-api
+        app.kubernetes.io/component: message
+    spec:
+      containers:
+      - name: message-api
+        image: im/message/message-api:dev
+        imagePullPolicy: IfNotPresent
+        args: ["-f", "/etc/im/message/message-api.yaml"]
+        ports:
+        - containerPort: 10500
+          name: http
+        readinessProbe:
+          tcpSocket:
+            port: 10500
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/message
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: message-api-config

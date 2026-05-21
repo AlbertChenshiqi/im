@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-api
+  labels:
+    app: notification-api
+    app.kubernetes.io/name: notification-api
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: notification
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-api
+  template:
+    metadata:
+      labels:
+        app: notification-api
+        app.kubernetes.io/name: notification-api
+        app.kubernetes.io/component: notification
+    spec:
+      containers:
+      - name: notification-api
+        image: im/notification/notification-api:dev
+        imagePullPolicy: IfNotPresent
+        args: ["-f", "/etc/im/notification/notification-api.yaml"]
+        ports:
+        - containerPort: 10600
+          name: http
+        readinessProbe:
+          tcpSocket:
+            port: 10600
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/notification
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: notification-api-config

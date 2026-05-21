@@ -1,0 +1,14 @@
+Name: message-api
+Host: 0.0.0.0
+Port: 10500
+Auth:
+  AccessSecret: dev-secret-change-in-production
+  AccessExpire: 604800
+
+Postgres:
+  DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+Log:
+  ServiceName: message-api
+  Mode: console
+  Level: info
+  Stat: false

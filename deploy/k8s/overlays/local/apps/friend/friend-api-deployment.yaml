@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: friend-api
+  labels:
+    app: friend-api
+    app.kubernetes.io/name: friend-api
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: friend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: friend-api
+  template:
+    metadata:
+      labels:
+        app: friend-api
+        app.kubernetes.io/name: friend-api
+        app.kubernetes.io/component: friend
+    spec:
+      containers:
+      - name: friend-api
+        image: im/friend/friend-api:dev
+        imagePullPolicy: IfNotPresent
+        args: ["-f", "/etc/im/friend/friend-api.yaml"]
+        ports:
+        - containerPort: 10200
+          name: http
+        readinessProbe:
+          tcpSocket:
+            port: 10200
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/friend
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: friend-api-config

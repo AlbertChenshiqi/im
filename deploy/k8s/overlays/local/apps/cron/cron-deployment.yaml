@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cron
+  labels:
+    app: cron
+    app.kubernetes.io/name: cron
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: cron
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cron
+  template:
+    metadata:
+      labels:
+        app: cron
+        app.kubernetes.io/name: cron
+        app.kubernetes.io/component: cron
+    spec:
+      containers:
+      - name: cron
+        image: im/cron/cron:dev
+        imagePullPolicy: IfNotPresent
+        args: ["-f", "/etc/im/cron/cron.yaml"]
+        ports:
+        - containerPort: 10800
+          name: http
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 10800
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 10800
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/cron
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: cron-config

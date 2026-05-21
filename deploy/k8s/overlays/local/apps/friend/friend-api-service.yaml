@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: friend-api
+  labels:
+    app: friend-api
+    app.kubernetes.io/name: friend-api
+    app.kubernetes.io/component: friend
+spec:
+  selector:
+    app: friend-api
+  type: NodePort
+  ports:
+  - port: 10200
+    targetPort: 10200
+    nodePort: 30200
+    name: http

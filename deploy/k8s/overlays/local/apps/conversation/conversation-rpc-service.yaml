@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: conversation-rpc
+  labels:
+    app: conversation-rpc
+    app.kubernetes.io/name: conversation-rpc
+    app.kubernetes.io/component: conversation
+spec:
+  selector:
+    app: conversation-rpc
+  ports:
+  - port: 20400
+    targetPort: 20400
+    name: http

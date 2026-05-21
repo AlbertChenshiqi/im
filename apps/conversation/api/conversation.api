@@ -1,0 +1,57 @@
+syntax = "v1"
+
+info (
+	title: "Conversation API"
+)
+
+type Conversation {
+	Id          string `json:"id"`
+	Type        string `json:"type"`
+	GroupId     int64  `json:"group_id,omitempty"`
+	GroupName   string `json:"group_name,omitempty"`
+	PeerUserId  int64  `json:"peer_user_id,omitempty"`
+	LastSeq     int64  `json:"last_seq"`
+	LastPreview string `json:"last_preview"`
+	Unread      int64  `json:"unread"`
+	Pinned      bool   `json:"pinned"`
+	Muted       bool   `json:"muted"`
+}
+
+type ListConversationsReq {
+	// DirectDays 覆盖配置：0=全部私信，>0=仅近 N 天有活动的私信；不传则用服务端 Conversation.DirectRecentDays
+	DirectDays *int `form:"direct_days,optional"`
+}
+
+type ConversationsResp {
+	Conversations []Conversation `json:"conversations"`
+}
+
+type MarkReadReq {
+	Seq int64 `json:"seq"`
+}
+
+type StatusResp {
+	Status string `json:"status"`
+}
+
+type ConvPathReq {
+	Id string `path:"id"`
+}
+
+type MarkReadPathReq {
+	Id  string `path:"id"`
+	Seq int64  `json:"seq"`
+}
+
+@server (
+	prefix: /v1
+	jwt:    Auth
+)
+service conversation-api {
+	@handler list
+	get /conversations (ListConversationsReq) returns (ConversationsResp)
+
+	@handler markRead
+	post /conversations/:id/read (MarkReadPathReq) returns (StatusResp)
+}
+

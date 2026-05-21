@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+commonLabels:
+  app.kubernetes.io/part-of: im
+  app.kubernetes.io/component: friend
+resources:
+  - friend-api-configmap.yaml
+  - friend-api-deployment.yaml
+  - friend-api-service.yaml
+  - friend-rpc-configmap.yaml
+  - friend-rpc-deployment.yaml
+  - friend-rpc-service.yaml

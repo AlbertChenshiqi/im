@@ -1,0 +1,6 @@
+Name: user.rpc
+ListenOn: 0.0.0.0:20100
+JwtAuth:
+  AccessSecret: dev-secret-change-in-production
+Postgres:
+  DSN: postgres://im:im@localhost:5432/im?sslmode=disable

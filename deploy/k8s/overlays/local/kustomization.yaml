@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: im-local
+
+resources:
+  - namespace.yaml
+  - infra
+  - apps/gateway
+  - apps/user
+  - apps/friend
+  - apps/group
+  - apps/conversation
+  - apps/message
+  - apps/notification
+  - apps/push
+  - apps/cron
+
+configMapGenerator:
+  - name: postgres-init
+    files:
+      - 001_init.sql=migrations/001_init.sql
+
+generatorOptions:
+  disableNameSuffixHash: true

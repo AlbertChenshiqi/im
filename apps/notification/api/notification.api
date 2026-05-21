@@ -1,0 +1,38 @@
+syntax = "v1"
+
+info (
+	title: "Notification API"
+)
+
+type Notification {
+	Id       int64  `json:"id"`
+	Title    string `json:"title"`
+	Body     string `json:"body"`
+	Category string `json:"category"`
+	Read     bool   `json:"read"`
+}
+
+type NotificationsResp {
+	Notifications []Notification `json:"notifications"`
+}
+
+type StatusResp {
+	Status string `json:"status"`
+}
+
+type IdPathReq {
+	Id int64 `path:"id"`
+}
+
+@server (
+	prefix: /v1
+	jwt:    Auth
+)
+service notification-api {
+	@handler list
+	get /notifications returns (NotificationsResp)
+
+	@handler markRead
+	post /notifications/:id/read (IdPathReq) returns (StatusResp)
+}
+
