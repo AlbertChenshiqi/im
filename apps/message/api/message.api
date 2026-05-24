@@ -24,10 +24,11 @@ type ListMessagesResp {
 }
 
 @server (
-	prefix: /v1
+	prefix: /message/v1
 	jwt:    Auth
 )
 service message-api {
 	@handler listMessages
 	get /conversations/:id/messages (ListMessagesReq) returns (ListMessagesResp)
 }
+

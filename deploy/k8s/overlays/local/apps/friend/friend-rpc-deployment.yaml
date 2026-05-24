@@ -23,6 +23,7 @@ spec:
       - name: friend-rpc
         image: im/friend/friend-rpc:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/friend-rpc"]
         args: ["-f", "/etc/im/friend/friend-rpc.yaml"]
         ports:
         - containerPort: 20200

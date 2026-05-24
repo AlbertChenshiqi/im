@@ -4,7 +4,7 @@ package configzero
 const (
 	PostgresDSN = "postgres://im:im@localhost:5432/im?sslmode=disable"
 	RedisAddr   = "localhost:6379"
-	KafkaBroker = "localhost:9092"
+	RocketMQNameServer = "localhost:9876"
 	JWTSecret   = "dev-secret-change-in-production"
 )
 

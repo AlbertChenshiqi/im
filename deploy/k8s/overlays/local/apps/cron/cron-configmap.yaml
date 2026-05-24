@@ -11,12 +11,12 @@ data:
     Name: cron
     HealthPort: 10800
     Postgres:
-      DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+      DSN: postgres://im:im@host.docker.internal:5432/im?sslmode=disable
     Redis:
-      Addr: redis:6379
-    Kafka:
-      Brokers:
-        - kafka:9092
+      Addr: host.docker.internal:6379
+    RocketMQ:
+      NameServer:
+        - host.docker.internal:9876
     Cron:
       InboxMergeMs: 100
       OfflineMergeSec: 10

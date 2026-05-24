@@ -56,7 +56,7 @@ type IdPathReq {
 }
 
 @server (
-	prefix: /v1
+	prefix: /user/v1
 	group:  auth
 )
 service user-api {
@@ -71,7 +71,7 @@ service user-api {
 }
 
 @server (
-	prefix: /v1
+	prefix: /user/v1
 	jwt:    Auth
 	group:  user
 )

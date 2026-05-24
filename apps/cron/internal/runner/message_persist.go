@@ -4,12 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"time"
 
 	"im/apps/cron/internal/svc"
 	"im/pkg/events"
-	imkafka "im/pkg/kafka"
 	"im/pkg/models"
+	"im/pkg/rocketmq"
 	"im/pkg/store"
 )
 
@@ -22,49 +21,39 @@ func NewMessagePersist(s *svc.ServiceContext) *MessagePersist {
 }
 
 func (r *MessagePersist) Run(ctx context.Context) {
-	reader := imkafka.NewReader(r.svc.Config.Kafka.Brokers, events.TopicMessageSend, "message-persist")
-	defer reader.Close()
-	persisted := imkafka.NewWriter(r.svc.Config.Kafka.Brokers, events.TopicMessagePersisted)
-	defer persisted.Close()
-
-	log.Println("[cron] message-persist started")
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-		m, err := reader.FetchMessage(ctx)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			time.Sleep(time.Second)
-			continue
-		}
+	ns := r.svc.Config.RocketMQ.NameServer
+	log.Println("[cron] message-persist started (topic=im_chat_persist)")
+	_ = rocketmq.RunPushConsumer(ctx, rocketmq.ConsumerConfig{
+		NameServers: ns,
+		Topic:       events.TopicChatPersist,
+		Group:       "message-persist",
+		Tag:         events.TagChatPersistStore,
+	}, func(ctx context.Context, body []byte) error {
 		var evt events.MessageSendEvent
-		if err := json.Unmarshal(m.Value, &evt); err != nil {
-			_ = reader.CommitMessages(ctx, m)
-			continue
+		if err := json.Unmarshal(body, &evt); err != nil {
+			return nil
+		}
+		seq := evt.BizSeq
+		if seq <= 0 {
+			seq = evt.Seq
 		}
 		msg := &models.Message{
-			ID: evt.MsgID, ConvID: evt.ConvID, SenderID: evt.SenderID, Seq: evt.Seq,
+			ID: evt.MsgID, ConvID: evt.ConvID, SenderID: evt.SenderID, Seq: seq,
 			ClientMsgID: evt.ClientMsgID, MsgType: evt.MsgType, Content: evt.Content,
 			CreatedAt: store.MessageTime(evt.Ts),
 		}
 		if err := store.InsertMessage(ctx, r.svc.Pool, msg); err != nil {
-			log.Printf("[cron] insert msg conv=%s seq=%d: %v", evt.ConvID, evt.Seq, err)
-			continue
+			log.Printf("[cron] insert msg conv=%s biz_seq=%d: %v", evt.ConvID, seq, err)
+			return err
 		}
 		preview := evt.Content
 		if len(preview) > 120 {
 			preview = preview[:120]
 		}
-		if err := store.UpdateConvMeta(ctx, r.svc.Pool, evt.ConvID, evt.Seq, evt.MsgID, preview); err != nil {
+		if err := store.UpdateConvMeta(ctx, r.svc.Pool, evt.ConvID, seq, evt.MsgID, preview); err != nil {
 			log.Printf("[cron] update conv meta conv=%s: %v", evt.ConvID, err)
-			continue
+			return err
 		}
-		_ = imkafka.PublishJSON(ctx, persisted, evt.ConvID, evt)
-		_ = reader.CommitMessages(ctx, m)
-	}
+		return r.svc.Producer.PublishJSON(ctx, events.TopicChat, events.TagChatPersisted, evt.SessionID, evt)
+	})
 }

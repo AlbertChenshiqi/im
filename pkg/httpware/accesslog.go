@@ -33,7 +33,7 @@ func AccessLog(next http.HandlerFunc) http.HandlerFunc {
 
 func skipAccessLog(path string) bool {
 	switch path {
-	case "/health", "/v1/ws":
+	case "/health", "/gateway/v1/health", "/gateway/v1/ws":
 		return true
 	default:
 		return false

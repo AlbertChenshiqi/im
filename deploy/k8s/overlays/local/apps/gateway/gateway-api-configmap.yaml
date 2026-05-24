@@ -15,10 +15,10 @@ data:
       Endpoints:
         - message-rpc:20500
     Redis:
-      Addr: redis:6379
-    Kafka:
-      Brokers:
-        - kafka:9092
+      Addr: host.docker.internal:6379
+    RocketMQ:
+      NameServer:
+        - host.docker.internal:9876
     WebSocket:
       OnlineTTL: 300
       HeartbeatInterval: 60

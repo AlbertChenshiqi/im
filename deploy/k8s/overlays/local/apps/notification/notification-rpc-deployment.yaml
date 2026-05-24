@@ -23,6 +23,7 @@ spec:
       - name: notification-rpc
         image: im/notification/notification-rpc:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/notification-rpc"]
         args: ["-f", "/etc/im/notification/notification-rpc.yaml"]
         ports:
         - containerPort: 20600

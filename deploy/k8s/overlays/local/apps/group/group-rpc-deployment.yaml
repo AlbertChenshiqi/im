@@ -23,6 +23,7 @@ spec:
       - name: group-rpc
         image: im/group/group-rpc:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/group-rpc"]
         args: ["-f", "/etc/im/group/group-rpc.yaml"]
         ports:
         - containerPort: 20300

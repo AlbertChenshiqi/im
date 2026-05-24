@@ -2,34 +2,46 @@
 # 将本地构建的 im/* 镜像载入 kind / minikube 节点
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=scripts/im-services.sh
+source "$ROOT/scripts/im-services.sh"
 TAG="${IMAGE_TAG:-dev}"
 CLUSTER="${K8S_CLUSTER:-kind}"
 CLUSTER_NAME="${K8S_CLUSTER_NAME:-im-local}"
 LOAD_RETRIES="${LOAD_RETRIES:-5}"
 
-SERVICES=(
-  "im/gateway/gateway-api"
-  "im/user/user-api"
-  "im/user/user-rpc"
-  "im/friend/friend-api"
-  "im/friend/friend-rpc"
-  "im/group/group-api"
-  "im/group/group-rpc"
-  "im/conversation/conversation-api"
-  "im/conversation/conversation-rpc"
-  "im/message/message-api"
-  "im/message/message-rpc"
-  "im/notification/notification-api"
-  "im/notification/notification-rpc"
-  "im/push/push-api"
-  "im/push/push-rpc"
-  "im/cron/cron"
-)
+# 与 build-images.sh 一致：BINS=message-rpc,gateway-api 仅载入指定镜像（bin 名）
+parse_want_bins() {
+  WANT_BINS=()
+  [[ -n "${BINS:-}" ]] || return 0
+  local raw="${BINS//,/ }"
+  local name
+  for name in $raw; do
+    [[ -n "$name" ]] || continue
+    WANT_BINS+=("$name")
+  done
+}
+
+want_image_ref() {
+  local ref=$1
+  [[ ${#WANT_BINS[@]} -eq 0 ]] && return 0
+  local base="${ref##*/}"
+  local w
+  for w in "${WANT_BINS[@]}"; do
+    if [[ "$base" == "$w" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+parse_want_bins
 
 image_refs() {
-  local ref
-  for ref in "${SERVICES[@]}"; do
-    echo "${ref}:${TAG}"
+  local spec image
+  for spec in "${IM_SERVICE_BUILD_SPECS[@]}"; do
+    IFS=':' read -r image _pkg _bin <<<"$spec"
+    want_image_ref "$image" || continue
+    echo "${image}:${TAG}"
   done
 }
 
@@ -73,6 +85,11 @@ load_kind_archive() {
     refs+=("$line")
   done < <(image_refs)
 
+  if [[ ${#refs[@]} -eq 0 ]]; then
+    echo "未匹配到任何镜像，请检查 BINS（bin 名，如 message-rpc）" >&2
+    exit 1
+  fi
+
   echo "== 校验本地镜像 =="
   local ref
   for ref in "${refs[@]}"; do
@@ -84,20 +101,26 @@ load_kind_archive() {
 
   local archive
   archive=$(mktemp -t im-kind-images.XXXXXX.tar)
-  trap 'rm -f "$archive"' EXIT
+  # 用 RETURN + 展开路径：EXIT 在函数返回后触发时 local archive 已失效，set -u 会报 unbound
+  trap "rm -f '${archive}'" RETURN
 
   echo "== docker save ${#refs[@]} 个镜像 -> 临时归档 =="
   docker save "${refs[@]}" -o "$archive"
 
   echo "== kind load image-archive（单次导入，避免 containerd 过载）=="
   retry kind load image-archive "$archive" --name "${CLUSTER_NAME}"
+
+  rm -f "$archive"
+  trap - RETURN
 }
 
 load_kind_one_by_one() {
   wait_kind_containerd
-  local spec ref
-  for spec in "${SERVICES[@]}"; do
-    ref="${spec}:${TAG}"
+  local spec image ref
+  for spec in "${IM_SERVICE_BUILD_SPECS[@]}"; do
+    IFS=':' read -r image _pkg _bin <<<"$spec"
+    want_image_ref "$image" || continue
+    ref="${image}:${TAG}"
     echo "== kind load ${ref} =="
     docker image inspect "$ref" >/dev/null
     retry kind load docker-image "$ref" --name "${CLUSTER_NAME}"
@@ -114,9 +137,11 @@ load_kind() {
 }
 
 load_minikube() {
-  local spec ref
-  for spec in "${SERVICES[@]}"; do
-    ref="${spec}:${TAG}"
+  local spec image ref
+  for spec in "${IM_SERVICE_BUILD_SPECS[@]}"; do
+    IFS=':' read -r image _pkg _bin <<<"$spec"
+    want_image_ref "$image" || continue
+    ref="${image}:${TAG}"
     echo "== minikube load ${ref} =="
     docker image inspect "$ref" >/dev/null
     retry minikube image load "$ref" -p "${CLUSTER_NAME}"

@@ -23,6 +23,7 @@ spec:
       - name: cron
         image: im/cron/cron:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/cron"]
         args: ["-f", "/etc/im/cron/cron.yaml"]
         ports:
         - containerPort: 10800

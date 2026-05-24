@@ -23,6 +23,7 @@ spec:
       - name: push-api
         image: im/push/push-api:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/push-api"]
         args: ["-f", "/etc/im/push/push-api.yaml"]
         ports:
         - containerPort: 10700

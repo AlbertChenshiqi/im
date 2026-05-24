@@ -23,6 +23,7 @@ spec:
       - name: message-rpc
         image: im/message/message-rpc:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/message-rpc"]
         args: ["-f", "/etc/im/message/message-rpc.yaml"]
         ports:
         - containerPort: 20500

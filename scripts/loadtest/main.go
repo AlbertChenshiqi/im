@@ -15,10 +15,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
+	"im/pkg/bizseq"
 	"im/pkg/convid"
 	"im/pkg/db"
 	"im/pkg/events"
-	"im/pkg/kafka"
+	"im/pkg/rocketmq"
+	"im/pkg/sessionid"
 )
 
 func main() {
@@ -55,35 +57,42 @@ func main() {
 		_ = rdb.Set(ctx, fmt.Sprintf("online:%d", i), "1", 0).Err()
 	}
 
-	writer := kafka.NewWriter([]string{getenv("KAFKA_BROKERS", "localhost:9092")}, events.TopicMessageSend)
-	defer writer.Close()
+	producer, err := rocketmq.NewProducer([]string{getenv("ROCKETMQ_NAMESERVER", "localhost:9876")})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer producer.Close()
 
+	sid := sessionid.FromConvID(conv)
 	for i := 0; i < *msgs; i++ {
-		evt := events.MessageSendEvent{
-			MsgID:    int64(1_000_000 + i),
-			ConvID:   conv,
-			ConvType: "group",
-			GroupID:  *groupID,
-			SenderID: uid,
-			Seq:      int64(i + 1),
-			MsgType:  "text",
-			Content:  fmt.Sprintf("load message %d", i),
-			Ts:       time.Now().Unix(),
+		recvMs := time.Now().UnixMilli()
+		bizSeq, err := bizseq.Allocate(ctx, rdb, sid, recvMs)
+		if err != nil {
+			log.Fatalf("bizseq: %v", err)
 		}
-		if err := kafka.PublishJSON(ctx, writer, conv, evt); err != nil {
-			log.Fatalf("publish: %v", err)
+		evt := events.MessageSendEvent{
+			MsgID: int64(1_000_000 + i), ConvID: conv, SessionID: sid,
+			ConvType: "group", GroupID: *groupID, SenderID: uid,
+			BizSeq: bizSeq, Seq: bizSeq, SendTs: recvMs, ServerRecvMs: recvMs,
+			MsgType: "text", Content: fmt.Sprintf("load message %d", i), Ts: time.Now().Unix(),
+		}
+		if err := producer.PublishJSON(ctx, events.TopicChat, events.TagChatGroup, sid, evt); err != nil {
+			log.Fatalf("publish chat: %v", err)
+		}
+		if err := producer.PublishJSON(ctx, events.TopicChatPersist, events.TagChatPersistStore, sid, evt); err != nil {
+			log.Fatalf("publish persist: %v", err)
 		}
 	}
 
 	elapsed := time.Since(start)
-	lag := measureKafkaLag(ctx, pool)
-	log.Printf("done: %d msgs in %v, kafka consumer hint: check inbox-unread logs", *msgs, elapsed)
+	lag := measureConsumerLag(ctx, pool)
+	log.Printf("done: %d msgs in %v, rocketmq consumer hint: check inbox-unread logs", *msgs, elapsed)
 	log.Printf("metrics: redis online keys, unread keys — lag_estimate=%s", lag)
 }
 
 func registerLogin(base, user, pass string) (string, int64) {
 	body, _ := json.Marshal(map[string]string{"username": user, "password": pass, "nickname": user})
-	resp, err := http.Post(base+"/v1/auth/register", "application/json", bytes.NewReader(body))
+	resp, err := http.Post(base+"/user/v1/auth/register", "application/json", bytes.NewReader(body))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,7 +113,7 @@ func createGroup(base, token string, members int) int64 {
 		ids = append(ids, i)
 	}
 	body, _ := json.Marshal(map[string]any{"name": "loadtest", "member_ids": ids})
-	req, _ := http.NewRequest(http.MethodPost, base+"/v1/groups", bytes.NewReader(body))
+	req, _ := http.NewRequest(http.MethodPost, base+"/group/v1/groups", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -121,7 +130,7 @@ func createGroup(base, token string, members int) int64 {
 	return out.Group.ID
 }
 
-func measureKafkaLag(ctx context.Context, pool *pgxpool.Pool) string {
+func measureConsumerLag(ctx context.Context, pool *pgxpool.Pool) string {
 	var cnt int
 	_ = pool.QueryRow(ctx, `SELECT COUNT(*) FROM group_members WHERE group_id=1`).Scan(&cnt)
 	return fmt.Sprintf("group_members_sample=%d", cnt)

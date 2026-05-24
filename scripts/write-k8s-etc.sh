@@ -1,14 +1,23 @@
 #!/usr/bin/env bash
-# 生成 K8s 本地 overlay 用配置（Service DNS：postgres / redis / kafka / *-rpc）
+# 生成 K8s 本地 overlay 用配置（Service DNS：postgres / redis / rocketmq-namesrv / *-rpc）
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/deploy/k8s/overlays/local/config"
 rm -rf "$OUT"
 mkdir -p "$OUT"/{gateway,user,friend,group,conversation,message,notification,push,cron}
 
-DSN='postgres://im:im@postgres:5432/im?sslmode=disable'
-REDIS='redis:6379'
 SECRET='dev-secret-change-in-production'
+
+if [[ "${HOST_INFRA:-0}" == "1" ]]; then
+  HOST="${HOST_INFRA_ADDR:-host.docker.internal}"
+  DSN="postgres://im:im@${HOST}:5432/im?sslmode=disable"
+  REDIS="${HOST}:6379"
+  ROCKETMQ="${HOST}:9876"
+else
+  DSN='postgres://im:im@postgres:5432/im?sslmode=disable'
+  REDIS='redis:6379'
+  ROCKETMQ='rocketmq-namesrv:9876'
+fi
 
 append_log() {
   local svc=$1 file=$2
@@ -89,9 +98,9 @@ cat >>"$OUT/message/message-rpc.yaml" <<EOF
 GroupRpc:
   Endpoints:
     - group-rpc:20300
-Kafka:
-  Brokers:
-    - kafka:9092
+RocketMQ:
+  NameServer:
+    - ${ROCKETMQ}
 RedisStore:
   Addr: ${REDIS}
 EOF
@@ -127,9 +136,9 @@ Postgres:
   DSN: ${DSN}
 Redis:
   Addr: ${REDIS}
-Kafka:
-  Brokers:
-    - kafka:9092
+RocketMQ:
+  NameServer:
+    - ${ROCKETMQ}
 Cron:
   InboxMergeMs: 100
   OfflineMergeSec: 10
@@ -145,9 +154,9 @@ MessageRpc:
     - message-rpc:20500
 Redis:
   Addr: ${REDIS}
-Kafka:
-  Brokers:
-    - kafka:9092
+RocketMQ:
+  NameServer:
+    - ${ROCKETMQ}
 WebSocket:
   OnlineTTL: 300
   HeartbeatInterval: 60
@@ -162,13 +171,40 @@ EOF
 append_log gateway-api "$OUT/gateway/gateway-api.yaml"
 
 cat >>"$OUT/notification/notification-rpc.yaml" <<EOF
-Kafka:
-  Brokers:
-    - kafka:9092
+RocketMQ:
+  NameServer:
+    - ${ROCKETMQ}
 EOF
 
 MIG="$ROOT/deploy/k8s/overlays/local/migrations"
 mkdir -p "$MIG"
 cp "$ROOT/migrations/001_init.sql" "$MIG/"
 
-echo "k8s config written to $OUT"
+KUST="$ROOT/deploy/k8s/overlays/local/kustomization.yaml"
+{
+  echo "apiVersion: kustomize.config.k8s.io/v1beta1"
+  echo "kind: Kustomization"
+  echo ""
+  echo "namespace: im-local"
+  echo ""
+  echo "resources:"
+  echo "  - namespace.yaml"
+  if [[ "${HOST_INFRA:-0}" != "1" ]]; then
+    echo "  - infra"
+  fi
+  for mod in gateway user friend group conversation message notification push cron; do
+    echo "  - apps/${mod}"
+  done
+  if [[ "${HOST_INFRA:-0}" != "1" ]]; then
+    echo ""
+    echo "configMapGenerator:"
+    echo "  - name: postgres-init"
+    echo "    files:"
+    echo "      - 001_init.sql=migrations/001_init.sql"
+    echo ""
+    echo "generatorOptions:"
+    echo "  disableNameSuffixHash: true"
+  fi
+} >"$KUST"
+
+echo "k8s config written to $OUT (HOST_INFRA=${HOST_INFRA:-0})"

@@ -7,9 +7,9 @@ Postgres:
 Redis:
   Addr: localhost:6379
 
-Kafka:
-  Brokers:
-    - localhost:9092
+RocketMQ:
+  NameServer:
+    - localhost:9876
 
 Cron:
   InboxMergeMs: 100

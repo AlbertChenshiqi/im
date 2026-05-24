@@ -5,16 +5,13 @@ import (
 	"encoding/json"
 	"log"
 	"strconv"
-	"time"
-
-	kafkago "github.com/segmentio/kafka-go"
 
 	"im/apps/cron/internal/svc"
 	"im/pkg/events"
-	imkafka "im/pkg/kafka"
+	"im/pkg/rocketmq"
 )
 
-// PushDispatch 消费 im.inbox.updated：在线 → gateway WebSocket；离线 → im.push.offline
+// PushDispatch 订阅 inbox_updated：在线 → gateway WebSocket；离线 → push_offline。
 type PushDispatch struct {
 	svc *svc.ServiceContext
 }
@@ -24,37 +21,24 @@ func NewPushDispatch(s *svc.ServiceContext) *PushDispatch {
 }
 
 func (r *PushDispatch) Run(ctx context.Context) {
-	reader := imkafka.NewReader(r.svc.Config.Kafka.Brokers, events.TopicInboxUpdated, "push-dispatch")
-	defer reader.Close()
-	offlineWriter := imkafka.NewWriter(r.svc.Config.Kafka.Brokers, events.TopicPushOffline)
-	defer offlineWriter.Close()
-
+	ns := r.svc.Config.RocketMQ.NameServer
 	log.Println("[cron] push-dispatch started")
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-		m, err := reader.FetchMessage(ctx)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			time.Sleep(time.Second)
-			continue
-		}
+	_ = rocketmq.RunPushConsumer(ctx, rocketmq.ConsumerConfig{
+		NameServers: ns,
+		Topic:       events.TopicSync,
+		Group:       "push-dispatch",
+		Tag:         events.TagSyncRead,
+	}, func(ctx context.Context, body []byte) error {
 		var evt events.InboxUpdatedEvent
-		if err := json.Unmarshal(m.Value, &evt); err != nil {
-			_ = reader.CommitMessages(ctx, m)
-			continue
+		if err := json.Unmarshal(body, &evt); err != nil {
+			return nil
 		}
-		r.handle(ctx, evt, offlineWriter)
-		_ = reader.CommitMessages(ctx, m)
-	}
+		r.handle(ctx, evt)
+		return nil
+	})
 }
 
-func (r *PushDispatch) handle(ctx context.Context, evt events.InboxUpdatedEvent, offline *kafkago.Writer) {
+func (r *PushDispatch) handle(ctx context.Context, evt events.InboxUpdatedEvent) {
 	if userOnline(ctx, r.svc, evt.UserID) {
 		unreadTotal, _ := r.svc.Redis.GetUnread(ctx, evt.UserID, evt.ConvID)
 		frame := events.BadgeFrame(evt, unreadTotal)
@@ -73,5 +57,5 @@ func (r *PushDispatch) handle(ctx context.Context, evt events.InboxUpdatedEvent,
 		Count:  int(evt.UnreadDelta),
 		Ts:     evt.Ts,
 	}
-	_ = imkafka.PublishJSON(ctx, offline, strconv.FormatInt(evt.UserID, 10), off)
+	_ = r.svc.Producer.PublishJSON(ctx, events.TopicPush, events.TagPushOffline, strconv.FormatInt(evt.UserID, 10), off)
 }

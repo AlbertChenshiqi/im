@@ -20,12 +20,12 @@ type Conversation struct {
 	Muted       bool   `json:"muted"`
 }
 
-type ListConversationsReq struct {
-	DirectDays *int `form:"direct_days,optional"`
-}
-
 type ConversationsResp struct {
 	Conversations []Conversation `json:"conversations"`
+}
+
+type ListConversationsReq struct {
+	DirectDays *int `form:"direct_days,optional"`
 }
 
 type MarkReadPathReq struct {

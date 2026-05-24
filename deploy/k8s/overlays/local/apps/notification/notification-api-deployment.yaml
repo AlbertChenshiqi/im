@@ -23,6 +23,7 @@ spec:
       - name: notification-api
         image: im/notification/notification-api:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/notification-api"]
         args: ["-f", "/etc/im/notification/notification-api.yaml"]
         ports:
         - containerPort: 10600

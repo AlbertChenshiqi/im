@@ -1,29 +1,94 @@
 package events
 
-import "im/pkg/models"
+import (
+	"strings"
 
-const (
-	TopicMessageSend       = "im.message.send"
-	TopicMessagePersisted  = "im.message.persisted"
-	TopicInboxUpdated      = "im.inbox.updated"
-	TopicGroupMember       = "im.group.member"
-	TopicNotificationSystem = "im.notification.system"
-	TopicPushOffline       = "im.push.offline"
+	"im/pkg/models"
 )
 
+// RocketMQ Topic：按主业务域拆分。
+const (
+	TopicChat        = "im_chat"         // 聊天主消息（扇出：未读、实时推送等）
+	TopicChatPersist = "im_chat_persist" // 异步落库（按 sessionId 保序）
+	TopicPush        = "im_push"         // 离线推送（离线消息、系统公告）
+	TopicSync        = "im_sync"         // 状态同步（已读、上下线、好友变更、实时下行）
+)
+
+// im_chat Tag
+const (
+	TagChatC2C       = "c2c"
+	TagChatGroup     = "group"
+	TagChatRecall    = "recall"
+	TagChatCustom    = "custom"
+	TagChatPersisted     = "persisted"
+	TagChatPersistStore  = "store" // im_chat_persist 落库任务
+)
+
+// im_push Tag
+const (
+	TagPushOffline      = "offline_message"
+	TagSystemAnnounce   = "system_announce"
+	TagNotificationSystem = TagSystemAnnounce // 兼容旧名
+)
+
+// im_sync Tag
+const (
+	TagSyncRead         = "read"
+	TagSyncGateway      = "gateway_push"
+	TagSyncOnline       = "online"
+	TagSyncFriend       = "friend"
+	TagSyncGroupMember  = "group_member"
+	TagInboxUpdated     = TagSyncRead
+	TagGatewayPush      = TagSyncGateway
+	TagGroupMember      = TagSyncGroupMember
+)
+
+// ChatSubscribeAll 聊天域消费方订阅表达式（落库、未读、实时推送等）。
+const ChatSubscribeAll = "c2c || group || custom || recall"
+
+const MsgTypeRecall = "recall"
+const MsgTypeCustom = "custom"
+
+// ChatTagForSend 按会话类型与消息类型选择 im_chat Tag。
+func ChatTagForSend(evt MessageSendEvent) string {
+	if evt.MsgType == MsgTypeRecall {
+		return TagChatRecall
+	}
+	if evt.MsgType == MsgTypeCustom || strings.HasPrefix(evt.MsgType, "custom_") {
+		return TagChatCustom
+	}
+	if evt.ConvType == models.ConvTypeGroup {
+		return TagChatGroup
+	}
+	return TagChatC2C
+}
+
 type MessageSendEvent struct {
-	MsgID       int64  `json:"msg_id"`
-	ConvID      string `json:"conv_id"`
-	ConvType    string `json:"conv_type"`
-	GroupID     int64  `json:"group_id,omitempty"`
-	SenderID    int64  `json:"sender_id"`
-	Seq         int64  `json:"seq"`
-	ClientMsgID string `json:"client_msg_id"`
-	MsgType     string `json:"msg_type"`
-	Content     string `json:"content"`
-	Ts          int64  `json:"ts"`
-	// RecipientIDs 单聊双方；群聊由 worker 按 group_members + IsOnline 扇出
+	MsgID        int64  `json:"msg_id"`
+	ConvID       string `json:"conv_id"`
+	SessionID    string `json:"session_id"`
+	ConvType     string `json:"conv_type"`
+	GroupID      int64  `json:"group_id,omitempty"`
+	SenderID     int64  `json:"sender_id"`
+	BizSeq       int64  `json:"biz_seq"`
+	Seq          int64  `json:"seq"` // 与 biz_seq 相同，兼容消费方
+	SendTs       int64  `json:"send_ts"`
+	ServerRecvMs int64  `json:"server_recv_ms"`
+	ClientMsgID  string `json:"client_msg_id"`
+	MsgType      string `json:"msg_type"`
+	Content      string `json:"content"`
+	Ts           int64  `json:"ts"`
 	RecipientIDs []int64 `json:"recipient_ids,omitempty"`
+}
+
+type MessageRecallEvent struct {
+	MsgID    int64  `json:"msg_id"`
+	ConvID   string `json:"conv_id"`
+	ConvType string `json:"conv_type"`
+	GroupID  int64  `json:"group_id,omitempty"`
+	SenderID int64  `json:"sender_id"`
+	Seq      int64  `json:"seq"`
+	Ts       int64  `json:"ts"`
 }
 
 type InboxUpdatedEvent struct {
@@ -36,11 +101,25 @@ type InboxUpdatedEvent struct {
 }
 
 type PushOfflineEvent struct {
+	UserID int64  `json:"user_id"`
+	ConvID string `json:"conv_id"`
+	Title  string `json:"title"`
+	Body   string `json:"body"`
+	Count  int    `json:"count"`
+	Ts     int64  `json:"ts"`
+}
+
+type OnlineStatusEvent struct {
+	UserID int64  `json:"user_id"`
+	Online bool   `json:"online"`
+	Ts     int64  `json:"ts"`
+	GatewayInstance string `json:"gateway_instance,omitempty"`
+}
+
+type FriendChangeEvent struct {
 	UserID   int64  `json:"user_id"`
-	ConvID   string `json:"conv_id"`
-	Title    string `json:"title"`
-	Body     string `json:"body"`
-	Count    int    `json:"count"`
+	PeerID   int64  `json:"peer_id"`
+	Action   string `json:"action"` // add | remove | accept
 	Ts       int64  `json:"ts"`
 }
 

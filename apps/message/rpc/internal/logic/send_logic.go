@@ -24,6 +24,7 @@ func (l *SendLogic) Send(in *message.SendReq) (*message.SendResp, error) {
 	res, err := l.svcCtx.Sender.Send(l.ctx, msgcore.SendInput{
 		SenderID: in.SenderId, ConvID: in.ConvId, Content: in.Content,
 		MsgType: in.MsgType, ClientMsgID: in.ClientMsgId,
+		BizSeq: in.BizSeq, SendTs: in.SendTs, ServerRecvMs: in.ServerRecvMs,
 	})
 	if err != nil {
 		l.Errorf("[message] send failed sender=%d conv=%s err=%v", in.SenderId, in.ConvId, err)

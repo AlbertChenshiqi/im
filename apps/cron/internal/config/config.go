@@ -10,8 +10,8 @@ type Config struct {
 	Redis struct {
 		Addr string
 	}
-	Kafka struct {
-		Brokers []string
+	RocketMQ struct {
+		NameServer []string
 	}
 	Cron struct {
 		InboxMergeMs    int `json:",optional"`

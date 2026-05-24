@@ -7,14 +7,12 @@ import (
 	"strconv"
 	"time"
 
-	kafkago "github.com/segmentio/kafka-go"
-
 	"im/apps/cron/internal/svc"
 	"im/pkg/events"
-	imkafka "im/pkg/kafka"
+	"im/pkg/rocketmq"
 )
 
-// PushNotification 消费 im.notification.system：在线 WebSocket，离线 push.offline
+// PushNotification 订阅 notification_system：在线 WebSocket，离线 push_offline。
 type PushNotification struct {
 	svc *svc.ServiceContext
 }
@@ -24,37 +22,24 @@ func NewPushNotification(s *svc.ServiceContext) *PushNotification {
 }
 
 func (r *PushNotification) Run(ctx context.Context) {
-	reader := imkafka.NewReader(r.svc.Config.Kafka.Brokers, events.TopicNotificationSystem, "push-notification")
-	defer reader.Close()
-	offlineWriter := imkafka.NewWriter(r.svc.Config.Kafka.Brokers, events.TopicPushOffline)
-	defer offlineWriter.Close()
-
+	ns := r.svc.Config.RocketMQ.NameServer
 	log.Println("[cron] push-notification started")
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-		m, err := reader.FetchMessage(ctx)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			time.Sleep(time.Second)
-			continue
-		}
+	_ = rocketmq.RunPushConsumer(ctx, rocketmq.ConsumerConfig{
+		NameServers: ns,
+		Topic:       events.TopicPush,
+		Group:       "push-notification",
+		Tag:         events.TagSystemAnnounce,
+	}, func(ctx context.Context, body []byte) error {
 		var evt events.NotificationEvent
-		if err := json.Unmarshal(m.Value, &evt); err != nil {
-			_ = reader.CommitMessages(ctx, m)
-			continue
+		if err := json.Unmarshal(body, &evt); err != nil {
+			return nil
 		}
-		r.handle(ctx, evt, offlineWriter)
-		_ = reader.CommitMessages(ctx, m)
-	}
+		r.handle(ctx, evt)
+		return nil
+	})
 }
 
-func (r *PushNotification) handle(ctx context.Context, evt events.NotificationEvent, offline *kafkago.Writer) {
+func (r *PushNotification) handle(ctx context.Context, evt events.NotificationEvent) {
 	ts := time.Now().Unix()
 	if userOnline(ctx, r.svc, evt.UserID) {
 		frame := events.NotificationFrame(evt, ts)
@@ -70,5 +55,5 @@ func (r *PushNotification) handle(ctx context.Context, evt events.NotificationEv
 		Count:  1,
 		Ts:     ts,
 	}
-	_ = imkafka.PublishJSON(ctx, offline, strconv.FormatInt(evt.UserID, 10), off)
+	_ = r.svc.Producer.PublishJSON(ctx, events.TopicPush, events.TagPushOffline, strconv.FormatInt(evt.UserID, 10), off)
 }

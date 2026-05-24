@@ -1,0 +1,83 @@
+# 本地基础设施：Postgres / Redis / RocketMQ（含 Dashboard :8080）
+# 启动：make host-infra-up  或  docker compose -f deploy/docker/docker-compose.yml up -d
+# 停止：make host-infra-down 或  docker compose -f deploy/docker/docker-compose.yml stop
+name: im-infra
+
+services:
+  postgres:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.postgres
+    image: im-infra/postgres:local
+    container_name: im-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: im
+      POSTGRES_PASSWORD: im
+      POSTGRES_DB: im
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U im -d im"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: im-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  rocketmq-namesrv:
+    image: apache/rocketmq:5.3.2
+    container_name: im-rocketmq-namesrv
+    command: sh mqnamesrv
+    ports:
+      - "9876:9876"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/9876'"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+
+  rocketmq-broker:
+    image: apache/rocketmq:5.3.2
+    container_name: im-rocketmq-broker
+    command: sh mqbroker -n rocketmq-namesrv:9876 -c /home/rocketmq/broker.conf
+    depends_on:
+      rocketmq-namesrv:
+        condition: service_healthy
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    environment:
+      NAMESRV_ADDR: rocketmq-namesrv:9876
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ${BROKER_CONF:-./broker.conf}:/home/rocketmq/broker.conf:ro
+
+  rocketmq-dashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: im-rocketmq-dashboard
+    ports:
+      - "8082:8082"
+    environment:
+      JAVA_OPTS: "-Drocketmq.namesrv.addr=rocketmq-namesrv:9876"
+    depends_on:
+      rocketmq-namesrv:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+    name: im-postgres-data
+    external: true

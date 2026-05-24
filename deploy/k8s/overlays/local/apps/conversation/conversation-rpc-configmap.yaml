@@ -11,7 +11,7 @@ data:
     Name: conversation.rpc
     ListenOn: 0.0.0.0:20400
     Postgres:
-      DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+      DSN: postgres://im:im@host.docker.internal:5432/im?sslmode=disable
     Log:
       ServiceName: conversation-rpc
       Mode: console

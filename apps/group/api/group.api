@@ -50,7 +50,7 @@ type AddMembersPathReq {
 }
 
 @server (
-	prefix: /v1
+	prefix: /group/v1
 	jwt:    Auth
 )
 service group-api {

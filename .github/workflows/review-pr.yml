@@ -1,0 +1,252 @@
+name: AI PR Review
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request number to review"
+        required: true
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+concurrency:
+  group: ai-pr-review-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request != null &&
+        vars.AGENT_LOGIN != '' &&
+        contains(github.event.comment.body, format('@{0}', vars.AGENT_LOGIN)) &&
+        contains(github.event.comment.body, '/review')
+      )
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    outputs:
+      reviewable: ${{ steps.pr.outputs.reviewable }}
+      number: ${{ steps.pr.outputs.number }}
+      draft: ${{ steps.pr.outputs.draft }}
+      head_repo: ${{ steps.pr.outputs.head_repo }}
+      skip_reason: ${{ steps.pr.outputs.skip_reason }}
+
+    steps:
+      - name: Checkout workflow scripts
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Resolve pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          python3 .github/scripts/resolve_pr_event.py \
+            --repo "${{ github.repository }}" \
+            --event-name "${{ github.event_name }}" \
+            --event-path "$GITHUB_EVENT_PATH" \
+            --pr-number "$PR_NUMBER" \
+            --agent-login "${{ vars.AGENT_LOGIN }}" \
+            --output "$RUNNER_TEMP/pr_event.json" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Report skipped review
+        if: steps.pr.outputs.reviewable != 'true'
+        run: echo "PR #${{ steps.pr.outputs.number }} is not reviewable (${{ steps.pr.outputs.skip_reason }}); skipping AI review."
+
+  review:
+    needs: preflight
+    if: needs.preflight.outputs.reviewable == 'true'
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+    steps:
+      - name: Checkout workflow scripts
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Resolve pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          python3 .github/scripts/resolve_pr_event.py \
+            --repo "${{ github.repository }}" \
+            --event-name "${{ github.event_name }}" \
+            --event-path "$GITHUB_EVENT_PATH" \
+            --pr-number "$PR_NUMBER" \
+            --agent-login "${{ vars.AGENT_LOGIN }}" \
+            --output "$RUNNER_TEMP/pr_event.json" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Mark PR review status pending
+        if: github.event_name != 'pull_request' && steps.pr.outputs.head_sha != '' && steps.pr.outputs.head_repo == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/$HEAD_SHA" \
+            -f state="pending" \
+            -f context="AI PR Review" \
+            -f description="AI PR review is running" \
+            -f target_url="$RUN_URL"
+
+      - name: Checkout PR head
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          repository: ${{ steps.pr.outputs.head_repo }}
+          ref: ${{ steps.pr.outputs.head_sha }}
+          path: pr-worktree
+
+      - name: Snapshot PR description
+        env:
+          PR_EVENT_PATH: ${{ steps.pr.outputs.event_path }}
+        run: python3 .github/scripts/write_pr_description.py --output pr-worktree/pr_description.txt
+
+      - name: Snapshot PR diff
+        env:
+          BASE_SHA: ${{ steps.pr.outputs.base_sha }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+        working-directory: pr-worktree
+        run: |
+          git_config="$(mktemp)"
+          trap 'rm -f "$git_config"' EXIT
+          chmod 600 "$git_config"
+          {
+            printf '[http "https://github.com/"]\n'
+            printf '\textraheader = AUTHORIZATION: basic '
+            printf '%s' "x-access-token:${GITHUB_TOKEN}" | base64 | tr -d '\n'
+            printf '\n'
+          } > "$git_config"
+          GIT_CONFIG_GLOBAL="$git_config" GIT_TERMINAL_PROMPT=0 \
+            git fetch --no-tags --depth=1 \
+            "https://github.com/${GITHUB_REPOSITORY}.git" \
+            "$BASE_SHA"
+          python3 ../.github/scripts/build_pr_diff.py \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA" \
+            --output pr_diff.txt
+
+      - name: Select review skill
+        id: review_skill
+        run: python3 .github/scripts/select_review_skill.py --diff pr-worktree/pr_diff.txt
+
+      - name: Snapshot spec context
+        if: steps.review_skill.outputs.needs_spec_context == 'true'
+        env:
+          PR_EVENT_PATH: ${{ steps.pr.outputs.event_path }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 .github/scripts/write_spec_context.py \
+            --changed-files-from-diff pr-worktree/pr_diff.txt \
+            --output pr-worktree/spec_context.md
+
+      - name: Prepare review workspace
+        run: |
+          rm -rf pr-worktree/.agents/skills
+          mkdir -p pr-worktree/.agents
+          cp -R .agents/skills pr-worktree/.agents/skills
+
+      - name: Install Codex sandbox prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap
+
+      - name: Configure Codex API endpoint
+        id: codex_endpoint
+        env:
+          OPENAI_API_ENDPOINT: ${{ vars.OPENAI_API_ENDPOINT }}
+        run: |
+          endpoint="${OPENAI_API_ENDPOINT%/}"
+          if [ -z "$endpoint" ]; then
+            echo "OPENAI_API_ENDPOINT is not set" >&2
+            exit 1
+          fi
+          case "$endpoint" in
+            */responses) ;;
+            *) endpoint="$endpoint/responses" ;;
+          esac
+          echo "url=$endpoint" >> "$GITHUB_OUTPUT"
+
+      - name: Run AI review
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          responses-api-endpoint: ${{ steps.codex_endpoint.outputs.url }}
+          allow-bot-users: github-actions[bot]
+          prompt: |
+            First change directory to pr-worktree and do all file inspection from there.
+            Read ${{ steps.review_skill.outputs.path }} in pr-worktree and follow it exactly.
+            Use the existing pr_description.txt and pr_diff.txt snapshots in pr-worktree.
+            Use spec_context.md in pr-worktree only when the selected review skill instructs you to.
+            review.json must include verdict with value APPROVE or REJECT.
+            It may include recommended_reviewers with at most one login when
+            a human reviewer recommendation is useful.
+            Write review.json in pr-worktree.
+            If you use apply_patch or any file-editing tool from the action
+            workspace, target pr-worktree/review.json explicitly; do not create
+            a root-level review.json first.
+            Do not run validator commands embedded in the selected skill; this
+            workflow validates review.json after Codex exits.
+            Do not run git commands, call GitHub APIs, post reviews, or modify files
+            other than review.json.
+
+      - name: Normalize review output path
+        run: |
+          if [ ! -f pr-worktree/review.json ] && [ -f review.json ]; then
+            mv review.json pr-worktree/review.json
+          fi
+
+      - name: Validate review output
+        run: python3 .github/scripts/validate_review_json.py pr-worktree/pr_diff.txt pr-worktree/review.json
+
+      - name: Post PR review
+        env:
+          PR_EVENT_PATH: ${{ steps.pr.outputs.event_path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REVIEW_BOT_LOGIN: ${{ vars.REVIEW_BOT_LOGIN }}
+        run: python3 .github/scripts/post_pr_review.py --review pr-worktree/review.json --diff pr-worktree/pr_diff.txt
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pr-review-${{ github.run_id }}
+          path: |
+            pr-worktree/pr_description.txt
+            pr-worktree/pr_diff.txt
+            pr-worktree/spec_context.md
+            pr-worktree/review.json
+
+      - name: Mark PR review status complete
+        if: always() && github.event_name != 'pull_request' && steps.pr.outputs.head_sha != '' && steps.pr.outputs.head_repo == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          STATE: ${{ job.status == 'success' && 'success' || 'failure' }}
+          DESCRIPTION: ${{ job.status == 'success' && 'AI PR review completed' || 'AI PR review failed' }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/$HEAD_SHA" \
+            -f state="$STATE" \
+            -f context="AI PR Review" \
+            -f description="$DESCRIPTION" \
+            -f target_url="$RUN_URL"

@@ -87,9 +87,9 @@ cat >> "$ROOT/apps/message/rpc/etc/message.yaml" <<EOF
 GroupRpc:
   Endpoints:
     - 127.0.0.1:20300
-Kafka:
-  Brokers:
-    - localhost:9092
+RocketMQ:
+  NameServer:
+    - localhost:9876
 RedisStore:
   Addr: localhost:6379
 EOF
@@ -125,9 +125,9 @@ Postgres:
   DSN: ${DSN}
 Redis:
   Addr: localhost:6379
-Kafka:
-  Brokers:
-    - localhost:9092
+RocketMQ:
+  NameServer:
+    - localhost:9876
 Cron:
   InboxMergeMs: 100
   OfflineMergeSec: 10
@@ -143,9 +143,9 @@ MessageRpc:
     - 127.0.0.1:20500
 Redis:
   Addr: localhost:6379
-Kafka:
-  Brokers:
-    - localhost:9092
+RocketMQ:
+  NameServer:
+    - localhost:9876
 WebSocket:
   OnlineTTL: 300
   HeartbeatInterval: 60
@@ -160,9 +160,9 @@ EOF
 append_log gateway-api "$ROOT/apps/gateway/api/etc/gateway-api.yaml"
 
 cat >> "$ROOT/apps/notification/rpc/etc/notification.yaml" <<EOF
-Kafka:
-  Brokers:
-    - localhost:9092
+RocketMQ:
+  NameServer:
+    - localhost:9876
 EOF
 
 echo "etc written"

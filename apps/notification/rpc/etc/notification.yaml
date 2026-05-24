@@ -2,6 +2,6 @@ Name: notification.rpc
 ListenOn: 0.0.0.0:20600
 Postgres:
   DSN: postgres://im:im@localhost:5432/im?sslmode=disable
-Kafka:
-  Brokers:
-    - localhost:9092
+RocketMQ:
+  NameServer:
+    - localhost:9876

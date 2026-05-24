@@ -6,7 +6,7 @@ Auth:
   AccessExpire: 604800
   DevMode: true
 Postgres:
-  DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+  DSN: postgres://im:im@host.docker.internal:5432/im?sslmode=disable
 Log:
   ServiceName: user-api
   Mode: console

@@ -7,10 +7,10 @@ import (
 
 	"im/apps/group/rpc/group_client"
 	"im/apps/message/rpc/internal/config"
-	"im/pkg/kafka"
 	"im/pkg/msgcore"
 	"im/pkg/redisclient"
 	"im/pkg/repo"
+	"im/pkg/rocketmq"
 	"im/pkg/snowflake"
 	"im/pkg/zerokit"
 )
@@ -24,7 +24,7 @@ type ServiceContext struct {
 func NewServiceContext(c config.Config) *ServiceContext {
 	pool := zerokit.MustPGPool(context.Background(), c.Postgres.DSN)
 	rdb := redisclient.New(c.RedisStore.Addr)
-	w := kafka.NewWriter(c.Kafka.Brokers, "im.message.send")
+	producer := rocketmq.MustProducer(c.RocketMQ.NameServer)
 	var groupRpc group_client.Group
 	if len(c.GroupRpc.Endpoints) > 0 {
 		groupRpc = group_client.NewGroup(zrpc.MustNewClient(zrpc.RpcClientConf{Endpoints: c.GroupRpc.Endpoints, NonBlock: true}))
@@ -34,7 +34,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:      c,
 		MessageRepo: repo.NewMessageRepo(pool),
 		Sender: &msgcore.Sender{
-			RDB: rdb, Writer: w, SF: snowflake.New(5), GroupRpc: groupRpc, ConvRepo: convRepo,
+			RDB: rdb, Producer: producer, SF: snowflake.New(5), GroupRpc: groupRpc, ConvRepo: convRepo,
 		},
 	}
 }

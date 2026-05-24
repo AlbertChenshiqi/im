@@ -4,3 +4,4 @@ bin/
 .vscode/
 .env
 *.log
+deploy/docker/broker.runtime.conf

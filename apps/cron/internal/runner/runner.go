@@ -7,7 +7,7 @@ import (
 	"im/apps/cron/internal/svc"
 )
 
-// StartAll 启动全部 Kafka 异步任务
+// StartAll 启动全部 RocketMQ 异步任务
 func StartAll(ctx context.Context, s *svc.ServiceContext, wg *sync.WaitGroup) {
 	tasks := []struct {
 		name string

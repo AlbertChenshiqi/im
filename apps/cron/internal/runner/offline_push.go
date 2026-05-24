@@ -11,8 +11,8 @@ import (
 
 	"im/apps/cron/internal/svc"
 	"im/pkg/events"
-	imkafka "im/pkg/kafka"
 	"im/pkg/offlinepush"
+	"im/pkg/rocketmq"
 )
 
 type OfflinePush struct {
@@ -34,35 +34,25 @@ func NewOfflinePush(s *svc.ServiceContext) *OfflinePush {
 }
 
 func (r *OfflinePush) Run(ctx context.Context) {
-	reader := imkafka.NewReader(r.svc.Config.Kafka.Brokers, events.TopicPushOffline, "offline-push")
-	defer reader.Close()
+	ns := r.svc.Config.RocketMQ.NameServer
 	vendor := offlinepush.NewVendor()
 	agg := newOfflineAggregator(r.mergeSec, vendor)
 
 	log.Printf("[cron] offline-push started (merge=%ds)", r.mergeSec)
-	for {
-		select {
-		case <-ctx.Done():
-			agg.flushAll()
-			return
-		default:
-		}
-		m, err := reader.FetchMessage(ctx)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			time.Sleep(time.Second)
-			continue
-		}
+	_ = rocketmq.RunPushConsumer(ctx, rocketmq.ConsumerConfig{
+		NameServers: ns,
+		Topic:       events.TopicPush,
+		Group:       "offline-push",
+		Tag:         events.TagPushOffline,
+	}, func(ctx context.Context, body []byte) error {
 		var evt events.PushOfflineEvent
-		if err := json.Unmarshal(m.Value, &evt); err != nil {
-			_ = reader.CommitMessages(ctx, m)
-			continue
+		if err := json.Unmarshal(body, &evt); err != nil {
+			return nil
 		}
 		agg.add(evt)
-		_ = reader.CommitMessages(ctx, m)
-	}
+		return nil
+	})
+	agg.flushAll()
 }
 
 type offlineAggregator struct {

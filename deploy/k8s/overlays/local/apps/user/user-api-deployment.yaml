@@ -23,6 +23,7 @@ spec:
       - name: user-api
         image: im/user/user-api:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/user-api"]
         args: ["-f", "/etc/im/user/user-api.yaml"]
         ports:
         - containerPort: 10100

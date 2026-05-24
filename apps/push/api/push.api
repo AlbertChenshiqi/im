@@ -9,10 +9,11 @@ type StatusResp {
 }
 
 @server (
-	prefix: /v1
+	prefix: /push/v1
 	jwt:    Auth
 )
 service push-api {
 	@handler setOnline
-	post /push/online returns (StatusResp)
+	post /online returns (StatusResp)
 }
+

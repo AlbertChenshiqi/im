@@ -5,8 +5,8 @@ Postgres:
 GroupRpc:
   Endpoints:
     - 127.0.0.1:20300
-Kafka:
-  Brokers:
-    - localhost:9092
+RocketMQ:
+  NameServer:
+    - localhost:9876
 RedisStore:
   Addr: localhost:6379

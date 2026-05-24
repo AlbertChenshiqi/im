@@ -9,7 +9,7 @@ type HealthResp {
 }
 
 @server (
-	prefix: /v1
+	prefix: /gateway/v1
 )
 service gateway-api {
 	@handler health

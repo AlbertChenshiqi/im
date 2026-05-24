@@ -9,7 +9,6 @@ import (
 	"im/apps/notification/rpc/internal/svc"
 	"im/apps/notification/rpc/notification"
 	"im/pkg/events"
-	"im/pkg/kafka"
 )
 
 type SendSystemLogic struct {
@@ -32,6 +31,6 @@ func (l *SendSystemLogic) SendSystem(in *notification.SendSystemReq) (*notificat
 		return nil, err
 	}
 	evt := events.NotificationEvent{UserID: in.UserId, Title: in.Title, Body: in.Body, Category: cat}
-	_ = kafka.PublishJSON(l.ctx, l.svcCtx.NotifyWriter, strconv.FormatInt(in.UserId, 10), evt)
+	_ = l.svcCtx.Producer.PublishJSON(l.ctx, events.TopicPush, events.TagSystemAnnounce, strconv.FormatInt(in.UserId, 10), evt)
 	return &notification.SendSystemResp{Id: n.ID}, nil
 }

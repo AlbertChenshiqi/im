@@ -4,15 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"time"
 
 	"im/apps/cron/internal/svc"
 	"im/pkg/events"
-	imkafka "im/pkg/kafka"
 	"im/pkg/models"
+	"im/pkg/rocketmq"
 )
 
-// RealtimeMessage 消费 im.message.send，向在线用户推送消息正文（WebSocket）
+// RealtimeMessage 订阅 message_send，向在线用户推送消息正文（WebSocket）。
 type RealtimeMessage struct {
 	svc *svc.ServiceContext
 }
@@ -22,32 +21,21 @@ func NewRealtimeMessage(s *svc.ServiceContext) *RealtimeMessage {
 }
 
 func (r *RealtimeMessage) Run(ctx context.Context) {
-	reader := imkafka.NewReader(r.svc.Config.Kafka.Brokers, events.TopicMessageSend, "realtime-message")
-	defer reader.Close()
-
+	ns := r.svc.Config.RocketMQ.NameServer
 	log.Println("[cron] realtime-message started")
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-		m, err := reader.FetchMessage(ctx)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			time.Sleep(time.Second)
-			continue
-		}
+	_ = rocketmq.RunPushConsumer(ctx, rocketmq.ConsumerConfig{
+		NameServers: ns,
+		Topic:       events.TopicChat,
+		Group:       "realtime-message",
+		Tag:         events.ChatSubscribeAll,
+	}, func(ctx context.Context, body []byte) error {
 		var evt events.MessageSendEvent
-		if err := json.Unmarshal(m.Value, &evt); err != nil {
-			_ = reader.CommitMessages(ctx, m)
-			continue
+		if err := json.Unmarshal(body, &evt); err != nil {
+			return nil
 		}
 		r.fanout(ctx, evt)
-		_ = reader.CommitMessages(ctx, m)
-	}
+		return nil
+	})
 }
 
 func (r *RealtimeMessage) fanout(ctx context.Context, evt events.MessageSendEvent) {

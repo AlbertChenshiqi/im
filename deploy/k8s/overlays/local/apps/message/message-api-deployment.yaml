@@ -23,6 +23,7 @@ spec:
       - name: message-api
         image: im/message/message-api:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/message-api"]
         args: ["-f", "/etc/im/message/message-api.yaml"]
         ports:
         - containerPort: 10500

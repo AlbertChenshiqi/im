@@ -9,12 +9,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	kafkago "github.com/segmentio/kafka-go"
 
 	"im/apps/cron/internal/svc"
 	"im/pkg/events"
-	imkafka "im/pkg/kafka"
 	"im/pkg/models"
+	"im/pkg/rocketmq"
 )
 
 type InboxUnread struct {
@@ -40,36 +39,23 @@ func NewInboxUnread(s *svc.ServiceContext) *InboxUnread {
 }
 
 func (r *InboxUnread) Run(ctx context.Context) {
-	reader := imkafka.NewReader(r.svc.Config.Kafka.Brokers, events.TopicMessageSend, "inbox-unread")
-	defer reader.Close()
-	inboxWriter := imkafka.NewWriter(r.svc.Config.Kafka.Brokers, events.TopicInboxUpdated)
-	defer inboxWriter.Close()
-	batcher := newInboxBatcher(inboxWriter, r.mergeWindow)
-
+	ns := r.svc.Config.RocketMQ.NameServer
+	batcher := newInboxBatcher(r.svc.Producer, r.mergeWindow)
 	log.Println("[cron] inbox-unread started")
-	for {
-		select {
-		case <-ctx.Done():
-			batcher.flushAll(ctx)
-			return
-		default:
-		}
-		m, err := reader.FetchMessage(ctx)
-		if err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			time.Sleep(time.Second)
-			continue
-		}
+	_ = rocketmq.RunPushConsumer(ctx, rocketmq.ConsumerConfig{
+		NameServers: ns,
+		Topic:       events.TopicChat,
+		Group:       "inbox-unread",
+		Tag:         events.ChatSubscribeAll,
+	}, func(ctx context.Context, body []byte) error {
 		var evt events.MessageSendEvent
-		if err := json.Unmarshal(m.Value, &evt); err != nil {
-			_ = reader.CommitMessages(ctx, m)
-			continue
+		if err := json.Unmarshal(body, &evt); err != nil {
+			return nil
 		}
 		r.process(ctx, evt, batcher)
-		_ = reader.CommitMessages(ctx, m)
-	}
+		return nil
+	})
+	batcher.flushAll(context.Background())
 }
 
 func (r *InboxUnread) process(ctx context.Context, evt events.MessageSendEvent, b *inboxBatcher) {
@@ -109,18 +95,18 @@ func muted(ctx context.Context, pool *pgxpool.Pool, groupID, uid int64) bool {
 }
 
 type inboxBatcher struct {
-	mu      sync.Mutex
-	pending map[int64]events.InboxUpdatedEvent
-	writer  *kafkago.Writer
-	window  time.Duration
-	timer   *time.Timer
+	mu       sync.Mutex
+	pending  map[int64]events.InboxUpdatedEvent
+	producer *rocketmq.Producer
+	window   time.Duration
+	timer    *time.Timer
 }
 
-func newInboxBatcher(w *kafkago.Writer, window time.Duration) *inboxBatcher {
+func newInboxBatcher(p *rocketmq.Producer, window time.Duration) *inboxBatcher {
 	return &inboxBatcher{
-		pending: make(map[int64]events.InboxUpdatedEvent),
-		writer:  w,
-		window:  window,
+		pending:  make(map[int64]events.InboxUpdatedEvent),
+		producer: p,
+		window:   window,
 	}
 }
 
@@ -149,7 +135,7 @@ func (b *inboxBatcher) flushAll(ctx context.Context) {
 		b.timer = nil
 	}
 	for uid, evt := range b.pending {
-		_ = imkafka.PublishJSON(ctx, b.writer, strconv.FormatInt(uid, 10), evt)
+		_ = b.producer.PublishJSON(ctx, events.TopicSync, events.TagSyncRead, strconv.FormatInt(uid, 10), evt)
 	}
 	b.pending = make(map[int64]events.InboxUpdatedEvent)
 }

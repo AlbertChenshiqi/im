@@ -23,6 +23,7 @@ spec:
       - name: user-rpc
         image: im/user/user-rpc:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/user-rpc"]
         args: ["-f", "/etc/im/user/user-rpc.yaml"]
         ports:
         - containerPort: 20100

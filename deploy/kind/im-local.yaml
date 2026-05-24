@@ -1,5 +1,6 @@
 # kind 本地集群：将 NodePort 映射到本机常用端口
 # 创建：kind create cluster --name im-local --config deploy/kind/im-local.yaml
+# 修改 extraPortMappings 后需重建集群：kind delete cluster --name im-local && make up
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: im-local
@@ -32,4 +33,17 @@ nodes:
         protocol: TCP
       - containerPort: 30800
         hostPort: 10800
+        protocol: TCP
+      # 基础设施（集群内 infra 时 NodePort → 本机；HOST_INFRA=1 时走本机 Docker 直连）
+      - containerPort: 30432
+        hostPort: 5432
+        protocol: TCP
+      - containerPort: 30637
+        hostPort: 6379
+        protocol: TCP
+      - containerPort: 30876
+        hostPort: 9876
+        protocol: TCP
+      - containerPort: 30911
+        hostPort: 10911
         protocol: TCP

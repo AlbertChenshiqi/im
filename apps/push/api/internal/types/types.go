@@ -3,10 +3,6 @@
 
 package types
 
-type GroupPathReq struct {
-	Id int64 `path:"id"`
-}
-
 type StatusResp struct {
 	Status string `json:"status"`
 }

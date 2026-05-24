@@ -29,7 +29,7 @@ type CheckResp {
 }
 
 @server (
-	prefix: /v1
+	prefix: /friend/v1
 	jwt:    Auth
 )
 service friend-api {

@@ -17,10 +17,16 @@ type Config struct {
 	Redis struct {
 		Addr string
 	}
-	Kafka struct {
-		Brokers []string
+	RocketMQ struct {
+		NameServer []string
 	}
 	WebSocket WebSocketConf
+	// SendOrder 服务端统一排序：聚合窗口(ms)、与 bizseq 时间分片一致默认 200
+	SendOrder SendOrderConf `json:",optional"`
+}
+
+type SendOrderConf struct {
+	WindowMs int `json:",default=200"`
 }
 
 type WebSocketConf struct {

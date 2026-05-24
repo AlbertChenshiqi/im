@@ -8,8 +8,8 @@ type Config struct {
 	GroupRpc struct {
 		Endpoints []string
 	}
-	Kafka struct {
-		Brokers []string
+	RocketMQ struct {
+		NameServer []string
 	}
 	// RedisStore 避免与 zrpc.RpcServerConf.Redis（go-zero RedisKeyConf，需 Host）重名
 	RedisStore struct {

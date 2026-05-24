@@ -3,18 +3,16 @@ package svc
 import (
 	"context"
 
-	kafkago "github.com/segmentio/kafka-go"
-
 	"im/apps/notification/rpc/internal/config"
-	"im/pkg/kafka"
 	"im/pkg/repo"
+	"im/pkg/rocketmq"
 	"im/pkg/zerokit"
 )
 
 type ServiceContext struct {
 	Config           config.Config
 	NotificationRepo *repo.NotificationRepo
-	NotifyWriter     *kafkago.Writer
+	Producer         *rocketmq.Producer
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -22,6 +20,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	return &ServiceContext{
 		Config:           c,
 		NotificationRepo: repo.NewNotificationRepo(pool),
-		NotifyWriter:     kafka.NewWriter(c.Kafka.Brokers, "im.notification.system"),
+		Producer:         rocketmq.MustProducer(c.RocketMQ.NameServer),
 	}
 }

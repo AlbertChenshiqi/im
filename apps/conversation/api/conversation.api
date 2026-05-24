@@ -44,7 +44,7 @@ type MarkReadPathReq {
 }
 
 @server (
-	prefix: /v1
+	prefix: /conversation/v1
 	jwt:    Auth
 )
 service conversation-api {

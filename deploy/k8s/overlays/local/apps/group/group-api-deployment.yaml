@@ -23,6 +23,7 @@ spec:
       - name: group-api
         image: im/group/group-api:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/group-api"]
         args: ["-f", "/etc/im/group/group-api.yaml"]
         ports:
         - containerPort: 10300

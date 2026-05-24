@@ -11,8 +11,8 @@ type AuthConf struct {
 	AccessExpire int64 `json:",optional"`
 }
 
-type KafkaConf struct {
-	Brokers []string
+type RocketMQConf struct {
+	NameServer []string
 }
 
 type RedisConf struct {

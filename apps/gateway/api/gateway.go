@@ -42,10 +42,10 @@ func main() {
 
 	h := hub.New(svcCtx)
 	var pushWG sync.WaitGroup
-	consumer := push.NewConsumer(c.Kafka.Brokers, h)
+	consumer := push.NewConsumer(c.RocketMQ.NameServer, h)
 	consumer.Start(ctx, &pushWG)
 
-	server.AddRoute(rest.Route{Method: http.MethodGet, Path: "/v1/ws", Handler: handler.WSHandler(svcCtx, h)})
+	server.AddRoute(rest.Route{Method: http.MethodGet, Path: "/gateway/v1/ws", Handler: handler.WSHandler(svcCtx, h)})
 
 	go func() {
 		ch := make(chan os.Signal, 1)

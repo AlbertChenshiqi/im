@@ -27,6 +27,7 @@ type InFrame struct {
 	Content     string `json:"content,omitempty"`
 	MsgType     string `json:"msg_type,omitempty"`
 	ClientMsgId string `json:"client_msg_id,omitempty"`
+	SendTs      int64  `json:"send_ts,omitempty"` // 客户端发送时间(ms)，用于窗口内二次排序
 }
 
 type AuthOKOut struct {

@@ -23,6 +23,7 @@ spec:
       - name: push-rpc
         image: im/push/push-rpc:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/push-rpc"]
         args: ["-f", "/etc/im/push/push-rpc.yaml"]
         ports:
         - containerPort: 20700

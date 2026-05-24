@@ -1,0 +1,82 @@
+# 示例：通过 NGINX Ingress 暴露 IM 服务（路径：/{service}/v1/...）
+# 使用前请替换域名、namespace、TLS secret。
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: im-api
+  namespace: im-local
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "8m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "im-gw-route"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "10800"
+spec:
+  ingressClassName: nginx
+  # tls:
+  #   - hosts:
+  #       - api.im.example.com
+  #     secretName: im-tls
+  rules:
+    - host: api.im.example.com
+      http:
+        paths:
+          - path: /user/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: user-api
+                port:
+                  number: 10100
+          - path: /friend/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: friend-api
+                port:
+                  number: 10200
+          - path: /group/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: group-api
+                port:
+                  number: 10300
+          - path: /conversation/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: conversation-api
+                port:
+                  number: 10400
+          - path: /message/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: message-api
+                port:
+                  number: 10500
+          - path: /notification/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-api
+                port:
+                  number: 10600
+          - path: /push/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: push-api
+                port:
+                  number: 10700
+          - path: /gateway/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway-api
+                port:
+                  number: 10000

@@ -23,6 +23,7 @@ spec:
       - name: conversation-rpc
         image: im/conversation/conversation-rpc:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/conversation-rpc"]
         args: ["-f", "/etc/im/conversation/conversation-rpc.yaml"]
         ports:
         - containerPort: 20400

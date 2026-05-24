@@ -5,12 +5,9 @@ import (
 	"encoding/json"
 	"strconv"
 
-	kafkago "github.com/segmentio/kafka-go"
-
 	"im/pkg/models"
+	"im/pkg/rocketmq"
 )
-
-const TopicGatewayPush = "im.gateway.push"
 
 type WSMessagePush struct {
 	Type        string `json:"type"` // message
@@ -68,8 +65,8 @@ func NotificationFrame(e NotificationEvent, ts int64) WSNotificationPush {
 	}
 }
 
-// PublishGatewayPush 写入 im.gateway.push；value 含 user_id，gateway 下发时剔除
-func PublishGatewayPush(ctx context.Context, w *kafkago.Writer, uid int64, payload any) error {
+// PublishGatewayPush 写入 im / gateway_push；value 含 user_id，gateway 按 JSON type 路由 WS 帧。
+func PublishGatewayPush(ctx context.Context, p *rocketmq.Producer, uid int64, payload any) error {
 	pb, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -79,12 +76,5 @@ func PublishGatewayPush(ctx context.Context, w *kafkago.Writer, uid int64, paylo
 		return err
 	}
 	m["user_id"] = uid
-	b, err := json.Marshal(m)
-	if err != nil {
-		return err
-	}
-	return w.WriteMessages(ctx, kafkago.Message{
-		Key:   []byte(strconv.FormatInt(uid, 10)),
-		Value: b,
-	})
+	return p.PublishJSON(ctx, TopicSync, TagSyncGateway, strconv.FormatInt(uid, 10), m)
 }

@@ -12,7 +12,7 @@ GATEWAY_REPLICAS="${GATEWAY_REPLICAS:-2}"
 
 # kind|image|bin|port|nodePort|module|configFile|probePath
 SERVICES=(
-  "api|im/gateway/gateway-api|gateway-api|10000|30000|gateway|gateway-api.yaml|/v1/health"
+  "api|im/gateway/gateway-api|gateway-api|10000|30000|gateway|gateway-api.yaml|/gateway/v1/health"
   "api|im/user/user-api|user-api|10100|30100|user|user-api.yaml|"
   "api|im/friend/friend-api|friend-api|10200|30200|friend|friend-api.yaml|"
   "api|im/group/group-api|group-api|10300|30300|group|group-api.yaml|"
@@ -135,6 +135,7 @@ emit_deployment() {
     echo "      - name: ${bin}"
     echo "        image: ${image}:${TAG}"
     echo "        imagePullPolicy: IfNotPresent"
+    echo "        command: [\"/usr/local/bin/${bin}\"]"
     echo "        args: [\"-f\", \"${mount_path}/${file}\"]"
     echo "        ports:"
     echo "        - containerPort: ${port}"

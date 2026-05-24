@@ -23,6 +23,7 @@ spec:
       - name: friend-api
         image: im/friend/friend-api:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/friend-api"]
         args: ["-f", "/etc/im/friend/friend-api.yaml"]
         ports:
         - containerPort: 10200

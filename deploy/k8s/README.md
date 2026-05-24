@@ -1,5 +1,8 @@
 # Kubernetes 部署
 
+> **完整部署文档**（镜像构建/推送、kind 与云集群、Dashboard 可视化、Ingress 路由）：  
+> **[DEPLOY.md](./DEPLOY.md)**
+
 本地与线上统一使用 K8s；清单**按模块分目录**，便于查看与扩展。
 
 ## 目录结构
@@ -13,7 +16,7 @@ deploy/k8s/overlays/local/
 │   ├── gateway/
 │   ├── user/
 │   └── ...
-├── infra/                   # Postgres / Redis / Kafka
+├── infra/                   # Postgres / Redis / RocketMQ
 │   ├── kustomization.yaml
 │   └── infra.yaml
 └── apps/                    # 按业务模块拆分（make k8s-etc 生成）
@@ -48,7 +51,7 @@ kubectl -n im-local get pods -l app.kubernetes.io/component=gateway
 | 机制 | 说明 |
 |------|------|
 | **副本数** | 默认 `GATEWAY_REPLICAS=2`（`make k8s-etc GATEWAY_REPLICAS=3` 可改） |
-| **Kafka** | 每 Pod 独立 `GATEWAY_INSTANCE_ID`（Pod 名）→ 独立 consumer group，各实例消费全量 `im.gateway.push`，仅向本机 WS 连接投递 |
+| **RocketMQ** | Tag `gateway_push` + **广播消费**；每 Pod 全量收到消息，仅向本机 WS 连接投递（可选 `GATEWAY_INSTANCE_ID` 区分 group） |
 | **Service** | `sessionAffinity: ClientIP`，长连接尽量粘在同一 Pod |
 | **Redis 在线** | `online_gateways:{uid}` 记录持有连接的实例；仅当所有实例均无连接才清除 `online:{uid}` |
 
@@ -82,7 +85,10 @@ make up
 
 | 服务 | 地址 |
 |------|------|
-| Gateway WS | `ws://localhost:10000/v1/ws` |
+| Gateway WS | `ws://localhost:10000/gateway/v1/ws` |
 | User API | `http://localhost:10100` |
+| Postgres | `postgres://im:im@localhost:5432/im?sslmode=disable` |
+| Redis | `localhost:6379` |
+| RocketMQ NameServer | `localhost:9876` |
 
-`make k8s-forward`：非 kind 集群时端口转发。
+`make k8s-forward`：非 kind 集群时 API 端口转发。基础设施非 kind 时用 `make k8s-forward-infra`。

@@ -5,7 +5,7 @@ cd "$ROOT"
 
 export POSTGRES_DSN="${POSTGRES_DSN:-postgres://im:im@localhost:5432/im?sslmode=disable}"
 export REDIS_ADDR="${REDIS_ADDR:-localhost:6379}"
-export KAFKA_BROKERS="${KAFKA_BROKERS:-localhost:9092}"
+export ROCKETMQ_NAMESERVER="${ROCKETMQ_NAMESERVER:-localhost:9876}"
 export JWT_SECRET="${JWT_SECRET:-dev-secret-change-in-production}"
 
 mkdir -p bin
@@ -45,5 +45,5 @@ run push-api push-api apps/push/api/etc/push-api.yaml 10700
 run cron cron apps/cron/etc/cron.yaml 10800
 
 echo "All services started."
-echo "Gateway WS: ws://localhost:10000/v1/ws"
+echo "Gateway WS: ws://localhost:10000/gateway/v1/ws"
 echo "User API:   http://localhost:10100"

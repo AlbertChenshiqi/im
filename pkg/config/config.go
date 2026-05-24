@@ -8,7 +8,7 @@ import (
 type Common struct {
 	PostgresDSN string
 	RedisAddr   string
-	KafkaBrokers []string
+	RocketMQNameServer []string
 	JWTSecret   string
 	GRPCPort    int
 	HTTPPort    int
@@ -18,7 +18,7 @@ func LoadCommon() Common {
 	return Common{
 		PostgresDSN: getEnv("POSTGRES_DSN", "postgres://im:im@localhost:5432/im?sslmode=disable"),
 		RedisAddr:   getEnv("REDIS_ADDR", "localhost:6379"),
-		KafkaBrokers: []string{getEnv("KAFKA_BROKERS", "localhost:9092")},
+		RocketMQNameServer: []string{getEnv("ROCKETMQ_NAMESERVER", "localhost:9876")},
 		JWTSecret:   getEnv("JWT_SECRET", "dev-secret-change-in-production"),
 		GRPCPort:    getEnvInt("GRPC_PORT", 50051),
 		HTTPPort:    getEnvInt("HTTP_PORT", 8080),

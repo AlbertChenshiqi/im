@@ -5,7 +5,6 @@ namespace: im-local
 
 resources:
   - namespace.yaml
-  - infra
   - apps/gateway
   - apps/user
   - apps/friend
@@ -15,11 +14,3 @@ resources:
   - apps/notification
   - apps/push
   - apps/cron
-
-configMapGenerator:
-  - name: postgres-init
-    files:
-      - 001_init.sql=migrations/001_init.sql
-
-generatorOptions:
-  disableNameSuffixHash: true

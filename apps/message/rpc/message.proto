@@ -8,8 +8,11 @@ message SendReq {
   string content = 3;
   string msg_type = 4;
   string client_msg_id = 5;
+  int64 send_ts = 6;         // 客户端发送时间(ms)
+  int64 biz_seq = 7;         // 网关分配的全局业务序号
+  int64 server_recv_ms = 8;  // 网关接收时间(ms)
 }
-message SendResp { int64 msg_id = 1; int64 seq = 2; }
+message SendResp { int64 msg_id = 1; int64 seq = 2; } // seq = biz_seq
 
 message ListMessagesReq {
   string conv_id = 1;

@@ -16,11 +16,11 @@ data:
       AccessExpire: 604800
     
     Postgres:
-      DSN: postgres://im:im@postgres:5432/im?sslmode=disable
+      DSN: postgres://im:im@host.docker.internal:5432/im?sslmode=disable
     Log:
       ServiceName: push-api
       Mode: console
       Level: info
       Stat: false
     Redis:
-      Addr: redis:6379
+      Addr: host.docker.internal:6379

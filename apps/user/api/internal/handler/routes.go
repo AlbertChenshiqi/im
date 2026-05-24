@@ -18,6 +18,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodPost,
+				Path:    "/auth/dev-token",
+				Handler: auth.DevTokenHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
 				Path:    "/auth/login",
 				Handler: auth.LoginHandler(serverCtx),
 			},
@@ -26,13 +31,8 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/auth/register",
 				Handler: auth.RegisterHandler(serverCtx),
 			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/auth/dev-token",
-				Handler: auth.DevTokenHandler(serverCtx),
-			},
 		},
-		rest.WithPrefix("/v1"),
+		rest.WithPrefix("/user/v1"),
 	)
 
 	server.AddRoutes(
@@ -54,6 +54,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
-		rest.WithPrefix("/v1"),
+		rest.WithPrefix("/user/v1"),
 	)
 }

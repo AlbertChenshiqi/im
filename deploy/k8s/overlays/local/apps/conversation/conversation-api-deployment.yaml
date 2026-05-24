@@ -23,6 +23,7 @@ spec:
       - name: conversation-api
         image: im/conversation/conversation-api:dev
         imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/conversation-api"]
         args: ["-f", "/etc/im/conversation/conversation-api.yaml"]
         ports:
         - containerPort: 10400

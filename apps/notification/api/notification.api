@@ -25,7 +25,7 @@ type IdPathReq {
 }
 
 @server (
-	prefix: /v1
+	prefix: /notification/v1
 	jwt:    Auth
 )
 service notification-api {
