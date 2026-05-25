@@ -10,7 +10,7 @@ RocketMQ:
   NameServer:
     - localhost:9876
 SendOrder:
-  WindowMs: 200
+  WindowMs: 500
 WebSocket:
   OnlineTTL: 300
   HeartbeatInterval: 60

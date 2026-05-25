@@ -13,10 +13,21 @@ func TestCompose(t *testing.T) {
 }
 
 func TestTimeSlot(t *testing.T) {
-	if TimeSlot(399) != 1 {
-		t.Fatalf("slot=%d", TimeSlot(399))
+	if TimeSlot(499) != 0 {
+		t.Fatalf("slot=%d", TimeSlot(499))
 	}
-	if TimeSlot(400) != 2 {
-		t.Fatalf("slot=%d", TimeSlot(400))
+	if TimeSlot(500) != 1 {
+		t.Fatalf("slot=%d", TimeSlot(500))
+	}
+}
+
+func TestComposeFromRecvMs(t *testing.T) {
+	seq, err := ComposeFromRecvMs(400, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := int64((400 << SlotOffsetBits) | 0)
+	if seq != want {
+		t.Fatalf("got %d want %d", seq, want)
 	}
 }

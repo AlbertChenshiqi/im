@@ -5,8 +5,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 COMPOSE_FILE="${COMPOSE_INFRA:-deploy/docker/docker-compose.yml}"
-# 本机 go run 默认 127.0.0.1；kind Pod 经宿主机访问时: HOST_INFRA_ADDR=host.docker.internal
-BROKER_IP="${HOST_INFRA_ADDR:-127.0.0.1}"
+# 默认 host.docker.internal：本机经映射端口访问，且 Dashboard 容器能连 Broker（127.0.0.1 在 Dashboard 内指向自身会报错）
+# 仅本机 go run、不用 Dashboard 且 Linux 无法解析 host.docker.internal 时: HOST_INFRA_ADDR=127.0.0.1
+BROKER_IP="${HOST_INFRA_ADDR:-host.docker.internal}"
 BROKER_RUNTIME="$ROOT/deploy/docker/broker.runtime.conf"
 
 sed "s/brokerIP1 = host.docker.internal/brokerIP1 = ${BROKER_IP}/" \
@@ -62,7 +63,7 @@ if docker inspect im-rocketmq-namesrv >/dev/null 2>&1; then
   registered=$(
     docker exec im-rocketmq-namesrv sh -c \
       'cd /home/rocketmq/rocketmq-5.3.2 2>/dev/null || cd /home/rocketmq/rocketmq-5.3.1 2>/dev/null || exit 0; bin/mqadmin clusterList -n localhost:9876 2>/dev/null' \
-      | awk '/broker-a/ {print $6; exit}'
+      | awk '/broker-a/ {print $4; exit}'
   )
   expect="${BROKER_IP}:10911"
   if [[ -n "$registered" && "$registered" != "$expect" ]]; then
@@ -73,10 +74,22 @@ if docker inspect im-rocketmq-namesrv >/dev/null 2>&1; then
 fi
 
 echo ""
-echo "本机基础设施已就绪（kind Pod 经 ${BROKER_IP} 访问）"
+echo "本机基础设施已就绪（Broker 注册地址: ${BROKER_IP}:10911）"
 echo "  Postgres:  localhost:5432  (im/im, db=im)"
 echo "  Redis:     localhost:6379"
-echo "  RocketMQ:  localhost:9876"
+echo "  RocketMQ:  localhost:9876  （本机进程连 NameServer，再按注册地址连 Broker）"
 echo "  RMQ 看板:  http://localhost:8082"
+echo ""
+echo "RocketMQ 本机 + Dashboard 兼容说明:"
+echo "  默认 brokerIP1=${BROKER_IP}：Dashboard 经容器内 host.docker.internal 访问宿主机映射端口；"
+echo "  本机 go run 从 localhost:9876 取到的 Broker 地址也是 ${BROKER_IP}:10911。"
+if [[ "$BROKER_IP" == "host.docker.internal" ]] && ! (command -v getent >/dev/null && getent hosts host.docker.internal >/dev/null 2>&1) \
+  && ! (ping -c1 -W1 host.docker.internal >/dev/null 2>&1); then
+  echo "  提示: 本机似乎无法解析 host.docker.internal，可执行一次:"
+  echo "    echo '127.0.0.1 host.docker.internal' | sudo tee -a /etc/hosts"
+fi
+if [[ "$BROKER_IP" == "127.0.0.1" ]]; then
+  echo "  注意: brokerIP1=127.0.0.1 时 Dashboard 容器内连不上 Broker，仅适合不用看板的纯本机开发。"
+fi
 echo ""
 echo "停止: make host-infra-down"

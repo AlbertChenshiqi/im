@@ -246,10 +246,10 @@ flowchart LR
 
 #### 服务端统一排序（bizSeq）
 
-1. **Gateway** 按 `conv_id` 聚合 **200ms** 滑动窗口；窗口内按客户端 `send_ts` 升序规整。
-2. 按规整顺序，用服务端接收时间 `server_recv_ms` 计算时间片：`timeSlot = server_recv_ms / 200`。
-3. Redis `im:seq:slot:{sessionId}:{timeSlot}` INCR 得 `slotOffset`（24h 过期）。
-4. `bizSeq = (timeSlot << 24) | slotOffset`，写入事件 `seq` / `biz_seq`。
+1. **Gateway** 按 `conv_id` 聚合 **500ms** 滑动窗口；窗口内按客户端 `send_ts` 升序规整。
+2. 按规整顺序，用服务端接收时间 `server_recv_ms` 计算时间片：`timeSlot = server_recv_ms / 500`。
+3. Redis `im:seq:slot:{sessionId}:{timeSlot}` INCR 得 `slotOffset`（1分钟 过期）。
+4. `bizSeq = (timeSlot << 16) | slotOffset`，写入事件 `seq` / `biz_seq`。
 5. **im_chat**（扇出）与 **im_chat_persist**（异步落库）均以 `sessionId` 为 Message Key，保证同会话有序。
 
 客户端上行示例：`{"type":"send","conv_id":"c2c_1_2","content":"hi","send_ts":1715000000123}`

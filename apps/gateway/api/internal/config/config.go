@@ -21,7 +21,7 @@ type Config struct {
 		NameServer []string
 	}
 	WebSocket WebSocketConf
-	// SendOrder 服务端统一排序：聚合窗口(ms)、与 bizseq 时间分片一致默认 200
+	// SendOrder 服务端统一排序：同 session 距上条 <= WindowMs 时走 Redis INCR，否则位运算生成 seq
 	SendOrder SendOrderConf `json:",optional"`
 }
 

@@ -6,6 +6,7 @@ import (
 	"im/apps/gateway/api/internal/config"
 	"im/apps/gateway/api/internal/order"
 	"im/apps/message/rpc/message_client"
+	"im/pkg/bizseq"
 	"im/pkg/redisclient"
 )
 
@@ -19,7 +20,7 @@ type ServiceContext struct {
 func NewServiceContext(c config.Config) *ServiceContext {
 	windowMs := c.SendOrder.WindowMs
 	if windowMs <= 0 {
-		windowMs = 200
+		windowMs = bizseq.SlotDivisorMs
 	}
 	s := &ServiceContext{
 		Config: c,

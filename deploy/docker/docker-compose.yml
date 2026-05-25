@@ -73,9 +73,14 @@ services:
       - "8082:8082"
     environment:
       JAVA_OPTS: "-Drocketmq.namesrv.addr=rocketmq-namesrv:9876"
+    extra_hosts:
+      # Broker 经 brokerIP1 注册；Dashboard 需能访问该地址（不能用容器内的 127.0.0.1）
+      - "host.docker.internal:host-gateway"
     depends_on:
       rocketmq-namesrv:
         condition: service_healthy
+      rocketmq-broker:
+        condition: service_started
 
 volumes:
   postgres-data:
