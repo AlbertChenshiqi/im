@@ -1,7 +1,6 @@
 package svc
 
 import (
-	"context"
 
 	"im/apps/group/api/internal/config"
 	"im/pkg/repo"
@@ -15,10 +14,10 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	pool := zerokit.MustPGPool(context.Background(), c.Postgres.DSN)
+	db := zerokit.MustMySQL(c.MySQL.DSN)
 	return &ServiceContext{
 		Config:    c,
-		GroupRepo: repo.NewGroupRepo(pool),
-		UserRepo:  repo.NewUserRepo(pool),
+		GroupRepo: repo.NewGroupRepo(db),
+		UserRepo:  repo.NewUserRepo(db),
 	}
 }

@@ -8,8 +8,9 @@ func TestInFrameValidate(t *testing.T) {
 		frame   InFrame
 		wantErr bool
 	}{
-		{"send ok", InFrame{Type: TypeSend, ConvId: "c2c_1_2", Content: "hi"}, false},
-		{"send missing conv", InFrame{Type: TypeSend, Content: "hi"}, true},
+		{"send ok", InFrame{Type: TypeSend, ConvId: "c2c_1_2", Input: []SendInputItem{{MsgType: "text", Content: `{"text":"hi"}`}}}, false},
+		{"send missing conv", InFrame{Type: TypeSend, Input: []SendInputItem{{MsgType: "text", Content: `{"text":"hi"}`}}}, true},
+		{"send missing input", InFrame{Type: TypeSend, ConvId: "c2c_1_2"}, true},
 		{"unknown", InFrame{Type: "foo"}, true},
 	}
 	for _, tt := range tests {

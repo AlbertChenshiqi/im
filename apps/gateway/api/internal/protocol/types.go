@@ -1,6 +1,9 @@
 package protocol
 
-import "im/pkg/code"
+import (
+	"im/pkg/code"
+	"im/pkg/models"
+)
 
 // 上行帧 type 常量（JWT 在握手 query/header 校验，无需 auth 帧）
 const (
@@ -19,15 +22,17 @@ const (
 	TypeNotification  = "notification"
 )
 
-// InFrame 客户端上行（先解析 type 再按分支校验）
+// SendInputItem 单条消息片段（与 models.MessageInput 字段一致）。
+type SendInputItem = models.MessageInput
+
+// InFrame 客户端上行（先解析 type 再按分支校验；消息体仅 input）
 type InFrame struct {
-	Type        string `json:"type"`
-	Token       string `json:"token,omitempty"`
-	ConvId      string `json:"conv_id,omitempty"`
-	Content     string `json:"content,omitempty"`
-	MsgType     string `json:"msg_type,omitempty"`
-	ClientMsgId string `json:"client_msg_id,omitempty"`
-	SendTs      int64  `json:"send_ts,omitempty"` // 客户端发送时间(ms)，用于窗口内二次排序
+	Type        string          `json:"type"`
+	Token       string          `json:"token,omitempty"`
+	ConvId      string          `json:"conv_id,omitempty"`
+	Input       []SendInputItem `json:"input"`
+	ClientMsgId string          `json:"client_msg_id,omitempty"`
+	SendTs      int64           `json:"send_ts,omitempty"` // 客户端发送时间(ms)，用于窗口内二次排序
 }
 
 type AuthOKOut struct {

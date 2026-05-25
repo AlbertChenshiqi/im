@@ -2,9 +2,8 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Notification struct {
@@ -18,19 +17,28 @@ type Notification struct {
 }
 
 type NotificationRepo struct {
-	pool *pgxpool.Pool
+	db *sql.DB
 }
 
-func NewNotificationRepo(pool *pgxpool.Pool) *NotificationRepo {
-	return &NotificationRepo{pool: pool}
+func NewNotificationRepo(db *sql.DB) *NotificationRepo {
+	return &NotificationRepo{db: db}
 }
 
 func (s *NotificationRepo) Create(ctx context.Context, userID int64, title, body, category string) (*Notification, error) {
-	var n Notification
-	err := s.pool.QueryRow(ctx,
-		`INSERT INTO notifications (user_id, title, body, category)
-		 VALUES ($1,$2,$3,$4) RETURNING id, user_id, title, body, category, read, created_at`,
+	res, err := s.db.ExecContext(ctx,
+		`INSERT INTO notifications (user_id, title, body, category) VALUES (?,?,?,?)`,
 		userID, title, body, category,
+	)
+	if err != nil {
+		return nil, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+	var n Notification
+	err = s.db.QueryRowContext(ctx,
+		`SELECT id, user_id, title, body, category, is_read, created_at FROM notifications WHERE id=?`, id,
 	).Scan(&n.ID, &n.UserID, &n.Title, &n.Body, &n.Category, &n.Read, &n.CreatedAt)
 	return &n, err
 }
@@ -39,9 +47,9 @@ func (s *NotificationRepo) List(ctx context.Context, userID int64, limit int) ([
 	if limit <= 0 {
 		limit = 50
 	}
-	rows, err := s.pool.Query(ctx,
-		`SELECT id, user_id, title, body, category, read, created_at
-		 FROM notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT $2`, userID, limit,
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, user_id, title, body, category, is_read, created_at
+		 FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT ?`, userID, limit,
 	)
 	if err != nil {
 		return nil, err
@@ -59,8 +67,8 @@ func (s *NotificationRepo) List(ctx context.Context, userID int64, limit int) ([
 }
 
 func (s *NotificationRepo) MarkRead(ctx context.Context, userID, id int64) error {
-	_, err := s.pool.Exec(ctx,
-		`UPDATE notifications SET read=TRUE WHERE id=$1 AND user_id=$2`, id, userID,
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE notifications SET is_read=1 WHERE id=? AND user_id=?`, id, userID,
 	)
 	return err
 }

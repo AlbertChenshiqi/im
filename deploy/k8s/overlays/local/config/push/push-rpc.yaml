@@ -1,7 +1,7 @@
 Name: push.rpc
 ListenOn: 0.0.0.0:20700
-Postgres:
-  DSN: postgres://im:im@host.docker.internal:5432/im?sslmode=disable
+MySQL:
+  DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 Log:
   ServiceName: push-rpc
   Mode: console

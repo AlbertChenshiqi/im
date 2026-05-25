@@ -2,68 +2,66 @@ package repo
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgxpool"
+	"database/sql"
 
 	"im/pkg/convid"
 	"im/pkg/models"
 )
 
 type ConversationRepo struct {
-	pool *pgxpool.Pool
+	db *sql.DB
 }
 
-func NewConversationRepo(pool *pgxpool.Pool) *ConversationRepo {
-	return &ConversationRepo{pool: pool}
+func NewConversationRepo(db *sql.DB) *ConversationRepo {
+	return &ConversationRepo{db: db}
 }
 
 func (s *ConversationRepo) EnsureC2C(ctx context.Context, a, b int64) (string, error) {
 	cid := convid.C2C(a, b)
-	_, err := s.pool.Exec(ctx,
-		`INSERT INTO conversations (id, type) VALUES ($1,'c2c') ON CONFLICT DO NOTHING`, cid,
+	_, err := s.db.ExecContext(ctx,
+		`INSERT IGNORE INTO conversations (id, type) VALUES (?,?)`, cid, "c2c",
 	)
 	if err != nil {
 		return "", err
 	}
 	for _, uid := range []int64{a, b} {
-		_, err = s.pool.Exec(ctx,
-			`INSERT INTO conversation_members (conv_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+		_, err = s.db.ExecContext(ctx,
+			`INSERT IGNORE INTO conversation_members (conv_id, user_id) VALUES (?,?)`,
 			cid, uid,
 		)
 		if err != nil {
 			return "", err
 		}
 	}
-	_, err = s.pool.Exec(ctx,
-		`INSERT INTO conversation_meta (conv_id) VALUES ($1) ON CONFLICT DO NOTHING`, cid,
+	_, err = s.db.ExecContext(ctx,
+		`INSERT IGNORE INTO conversation_meta (conv_id) VALUES (?)`, cid,
 	)
 	return cid, err
 }
 
-// EnsureDirect 兼容旧调用，等同 EnsureC2C
 func (s *ConversationRepo) EnsureDirect(ctx context.Context, a, b int64) (string, error) {
 	return s.EnsureC2C(ctx, a, b)
 }
 
 func (s *ConversationRepo) EnsureGroupConv(ctx context.Context, groupID int64) (string, error) {
 	cid := convid.Group(groupID)
-	_, err := s.pool.Exec(ctx,
-		`INSERT INTO conversations (id, type, group_id) VALUES ($1,'group',$2) ON CONFLICT DO NOTHING`,
-		cid, groupID,
+	_, err := s.db.ExecContext(ctx,
+		`INSERT IGNORE INTO conversations (id, type, group_id) VALUES (?,?,?)`,
+		cid, "group", groupID,
 	)
 	if err != nil {
 		return "", err
 	}
-	_, err = s.pool.Exec(ctx,
-		`INSERT INTO conversation_meta (conv_id) VALUES ($1) ON CONFLICT DO NOTHING`, cid,
+	_, err = s.db.ExecContext(ctx,
+		`INSERT IGNORE INTO conversation_meta (conv_id) VALUES (?)`, cid,
 	)
 	return cid, err
 }
 
 func (s *ConversationRepo) AddGroupMembersToConv(ctx context.Context, cid string, userIDs []int64) error {
 	for _, uid := range userIDs {
-		if _, err := s.pool.Exec(ctx,
-			`INSERT INTO conversation_members (conv_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+		if _, err := s.db.ExecContext(ctx,
+			`INSERT IGNORE INTO conversation_members (conv_id, user_id) VALUES (?,?)`,
 			cid, uid,
 		); err != nil {
 			return err
@@ -73,14 +71,14 @@ func (s *ConversationRepo) AddGroupMembersToConv(ctx context.Context, cid string
 }
 
 func (s *ConversationRepo) ListForUser(ctx context.Context, uid int64) ([]models.Conversation, error) {
-	rows, err := s.pool.Query(ctx,
+	rows, err := s.db.QueryContext(ctx,
 		`SELECT c.id, c.type, COALESCE(c.group_id,0), COALESCE(m.last_seq,0), COALESCE(m.last_preview,''),
 		        cm.pinned, cm.muted
 		 FROM conversation_members cm
 		 JOIN conversations c ON c.id = cm.conv_id
 		 LEFT JOIN conversation_meta m ON m.conv_id = c.id
-		 WHERE cm.user_id=$1
-		 ORDER BY m.updated_at DESC NULLS LAST`, uid,
+		 WHERE cm.user_id=?
+		 ORDER BY (m.updated_at IS NULL), m.updated_at DESC`, uid,
 	)
 	if err != nil {
 		return nil, err
@@ -98,23 +96,23 @@ func (s *ConversationRepo) ListForUser(ctx context.Context, uid int64) ([]models
 }
 
 func (s *ConversationRepo) MarkRead(ctx context.Context, uid int64, convID string, seq int64) error {
-	_, err := s.pool.Exec(ctx,
-		`UPDATE conversation_members SET last_read_seq=$3, updated_at=NOW()
-		 WHERE conv_id=$1 AND user_id=$2 AND last_read_seq < $3`,
-		convID, uid, seq,
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE conversation_members SET last_read_seq=?, updated_at=CURRENT_TIMESTAMP(3)
+		 WHERE conv_id=? AND user_id=? AND last_read_seq < ?`,
+		seq, convID, uid, seq,
 	)
 	return err
 }
 
 func (s *ConversationRepo) UpdateMeta(ctx context.Context, convID string, seq, msgID int64, preview string) error {
-	_, err := s.pool.Exec(ctx,
+	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO conversation_meta (conv_id, last_seq, last_msg_id, last_preview, updated_at)
-		 VALUES ($1,$2,$3,$4,NOW())
-		 ON CONFLICT (conv_id) DO UPDATE SET
-		   last_seq=GREATEST(conversation_meta.last_seq, EXCLUDED.last_seq),
-		   last_msg_id=EXCLUDED.last_msg_id,
-		   last_preview=EXCLUDED.last_preview,
-		   updated_at=NOW()`,
+		 VALUES (?,?,?,?,CURRENT_TIMESTAMP(3))
+		 ON DUPLICATE KEY UPDATE
+		   last_seq=GREATEST(last_seq, VALUES(last_seq)),
+		   last_msg_id=VALUES(last_msg_id),
+		   last_preview=VALUES(last_preview),
+		   updated_at=CURRENT_TIMESTAMP(3)`,
 		convID, seq, msgID, preview,
 	)
 	return err
@@ -122,16 +120,22 @@ func (s *ConversationRepo) UpdateMeta(ctx context.Context, convID string, seq, m
 
 func (s *ConversationRepo) GetConvType(ctx context.Context, convID string) (string, int64, error) {
 	var typ string
-	var gid int64
-	err := s.pool.QueryRow(ctx,
-		`SELECT type, COALESCE(group_id,0) FROM conversations WHERE id=$1`, convID,
+	var gid sql.NullInt64
+	err := s.db.QueryRowContext(ctx,
+		`SELECT type, group_id FROM conversations WHERE id=?`, convID,
 	).Scan(&typ, &gid)
-	return typ, gid, err
+	if err != nil {
+		return "", 0, err
+	}
+	if gid.Valid {
+		return typ, gid.Int64, nil
+	}
+	return typ, 0, nil
 }
 
 func (s *ConversationRepo) GetDirectMembers(ctx context.Context, convID string) ([]int64, error) {
-	rows, err := s.pool.Query(ctx,
-		`SELECT user_id FROM conversation_members WHERE conv_id=$1`, convID,
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT user_id FROM conversation_members WHERE conv_id=?`, convID,
 	)
 	if err != nil {
 		return nil, err

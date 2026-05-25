@@ -10,6 +10,7 @@ import (
 	"im/pkg/convid"
 	"im/pkg/events"
 	"im/pkg/models"
+	"im/pkg/msgbody"
 	"im/pkg/redisclient"
 	"im/pkg/repo"
 	"im/pkg/rocketmq"
@@ -28,8 +29,7 @@ type Sender struct {
 type SendInput struct {
 	SenderID     int64
 	ConvID       string
-	Content      string
-	MsgType      string
+	Input        []models.MessageInput
 	ClientMsgID  string
 	BizSeq       int64
 	SendTs       int64
@@ -42,8 +42,8 @@ type SendResult struct {
 }
 
 func (s *Sender) Send(ctx context.Context, in SendInput) (*SendResult, error) {
-	if in.MsgType == "" {
-		in.MsgType = models.MsgTypeText
+	if len(in.Input) == 0 {
+		return nil, fmt.Errorf("input required")
 	}
 	if in.BizSeq <= 0 {
 		return nil, fmt.Errorf("biz_seq required")
@@ -75,18 +75,18 @@ func (s *Sender) Send(ctx context.Context, in SendInput) (*SendResult, error) {
 		_, _ = s.RDB.CheckDedupe(ctx, in.ClientMsgID, msgID)
 	}
 	sid := sessionid.FromConvID(in.ConvID)
-	ts := time.Now().Unix()
+	ts := time.Now().UnixMilli()
 	if in.SendTs > 0 {
-		ts = in.SendTs / 1000
+		ts = in.SendTs
 	}
 	evt := events.MessageSendEvent{
 		MsgID: msgID, ConvID: in.ConvID, SessionID: sid, ConvType: convType, GroupID: groupID,
 		SenderID: in.SenderID, BizSeq: in.BizSeq, Seq: in.BizSeq,
 		SendTs: in.SendTs, ServerRecvMs: in.ServerRecvMs,
-		ClientMsgID: in.ClientMsgID, MsgType: in.MsgType, Content: in.Content, Ts: ts,
+		ClientMsgID: in.ClientMsgID, Input: in.Input, Ts: ts,
 		RecipientIDs: recipients,
 	}
-	tag := events.ChatTagForSend(evt)
+	tag := msgbody.ChatTag(convType, in.Input)
 	// 同 sessionId 作 Message Key，保证同会话 RocketMQ 分区内有序
 	if err := s.Producer.PublishJSON(ctx, events.TopicChat, tag, sid, evt); err != nil {
 		return nil, err

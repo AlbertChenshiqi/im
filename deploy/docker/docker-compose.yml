@@ -1,29 +1,29 @@
-# 本地基础设施：Postgres / Redis / RocketMQ（含 Dashboard :8080）
+# 本地基础设施：MySQL / Redis / RocketMQ（含 Dashboard :8082）
 # 启动：make host-infra-up  或  docker compose -f deploy/docker/docker-compose.yml up -d
-# 停止：make host-infra-down 或  docker compose -f deploy/docker/docker-compose.yml stop
 name: im-infra
 
 services:
-  postgres:
+  mysql:
     build:
       context: ../..
-      dockerfile: deploy/docker/Dockerfile.postgres
-    image: im-infra/postgres:local
-    container_name: im-postgres
+      dockerfile: deploy/docker/Dockerfile.mysql
+    image: im-infra/mysql:local
+    container_name: im-mysql
     ports:
-      - "5432:5432"
+      - "3306:3306"
     environment:
-      POSTGRES_USER: im
-      POSTGRES_PASSWORD: im
-      POSTGRES_DB: im
+      MYSQL_ROOT_PASSWORD: im
+      MYSQL_USER: im
+      MYSQL_PASSWORD: im
+      MYSQL_DATABASE: im
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U im -d im"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uim", "-pim"]
       interval: 5s
       timeout: 5s
       retries: 12
-      start_period: 10s
+      start_period: 15s
 
   redis:
     image: redis:7-alpine
@@ -74,7 +74,6 @@ services:
     environment:
       JAVA_OPTS: "-Drocketmq.namesrv.addr=rocketmq-namesrv:9876"
     extra_hosts:
-      # Broker 经 brokerIP1 注册；Dashboard 需能访问该地址（不能用容器内的 127.0.0.1）
       - "host.docker.internal:host-gateway"
     depends_on:
       rocketmq-namesrv:
@@ -83,6 +82,6 @@ services:
         condition: service_started
 
 volumes:
-  postgres-data:
-    name: im-postgres-data
+  mysql-data:
+    name: im-mysql-data
     external: true

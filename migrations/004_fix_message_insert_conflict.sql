@@ -1,2 +1,0 @@
--- 说明：落库使用 ON CONFLICT (conv_id, seq)，与 UNIQUE(conv_id, seq) 对齐。
--- idx_messages_client_dedupe 为部分唯一索引，不可用于 ON CONFLICT (conv_id, client_msg_id) 无 WHERE 子句。

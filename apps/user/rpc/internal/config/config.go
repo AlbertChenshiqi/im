@@ -8,7 +8,7 @@ type Config struct {
 	JwtAuth struct {
 		AccessSecret string
 	}
-	Postgres struct {
+	MySQL struct {
 		DSN string
 	}
 }

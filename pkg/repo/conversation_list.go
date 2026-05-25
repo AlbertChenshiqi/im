@@ -9,7 +9,6 @@ import (
 	"im/pkg/models"
 )
 
-// ConversationRow 会话列表一行（群 + 私信统一结构）。
 type ConversationRow struct {
 	models.Conversation
 	PeerUserID int64
@@ -17,21 +16,20 @@ type ConversationRow struct {
 	UpdatedAt  time.Time
 }
 
-// ListGroupsForUser 用户加入的全部群会话（以 group_members 为准，不依赖是否曾写入 conversation_members）。
 func (s *ConversationRepo) ListGroupsForUser(ctx context.Context, uid int64) ([]ConversationRow, error) {
-	rows, err := s.pool.Query(ctx,
-		`SELECT COALESCE(c.id, 'group_' || g.id::text), 'group', g.id, g.name,
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT COALESCE(c.id, CONCAT('group_', g.id)), 'group', g.id, g.name,
 		        COALESCE(m.last_seq, 0), COALESCE(m.last_preview, ''),
-		        COALESCE(cm.pinned, false), COALESCE(cm.muted, gm.muted),
+		        COALESCE(cm.pinned, 0), COALESCE(cm.muted, gm.muted),
 		        COALESCE(m.updated_at, g.created_at)
 		 FROM group_members gm
-		 JOIN groups g ON g.id = gm.group_id
+		 JOIN `+"`groups`"+` g ON g.id = gm.group_id
 		 LEFT JOIN conversations c ON c.type = 'group' AND c.group_id = g.id
-		 LEFT JOIN conversation_meta m ON m.conv_id = COALESCE(c.id, 'group_' || g.id::text)
-		 LEFT JOIN conversation_members cm ON cm.conv_id = COALESCE(c.id, 'group_' || g.id::text) AND cm.user_id = $1
-		 WHERE gm.user_id = $1
+		 LEFT JOIN conversation_meta m ON m.conv_id = COALESCE(c.id, CONCAT('group_', g.id))
+		 LEFT JOIN conversation_members cm ON cm.conv_id = COALESCE(c.id, CONCAT('group_', g.id)) AND cm.user_id = ?
+		 WHERE gm.user_id = ?
 		 ORDER BY COALESCE(m.updated_at, g.created_at) DESC`,
-		uid,
+		uid, uid,
 	)
 	if err != nil {
 		return nil, err
@@ -40,20 +38,19 @@ func (s *ConversationRepo) ListGroupsForUser(ctx context.Context, uid int64) ([]
 	return scanConversationRows(rows, uid, false)
 }
 
-// ListDirectForUser 私信会话；recentDays=0 表示全部，>0 仅保留近 N 天有活动的会话（不要求好友关系）。
 func (s *ConversationRepo) ListDirectForUser(ctx context.Context, uid int64, recentDays int) ([]ConversationRow, error) {
-	rows, err := s.pool.Query(ctx,
+	rows, err := s.db.QueryContext(ctx,
 		`SELECT c.id, c.type, COALESCE(c.group_id, 0), '',
 		        COALESCE(m.last_seq, 0), COALESCE(m.last_preview, ''),
-		        COALESCE(cm.pinned, false), COALESCE(cm.muted, false),
+		        COALESCE(cm.pinned, 0), COALESCE(cm.muted, 0),
 		        COALESCE(m.updated_at, cm.updated_at, c.created_at)
 		 FROM conversation_members cm
 		 JOIN conversations c ON c.id = cm.conv_id AND c.type IN ('c2c', 'direct')
 		 LEFT JOIN conversation_meta m ON m.conv_id = c.id
-		 WHERE cm.user_id = $1
-		   AND ($2::int = 0 OR COALESCE(m.updated_at, cm.updated_at, c.created_at) >= NOW() - ($2::int * INTERVAL '1 day'))
+		 WHERE cm.user_id = ?
+		   AND (? = 0 OR COALESCE(m.updated_at, cm.updated_at, c.created_at) >= DATE_SUB(NOW(), INTERVAL ? DAY))
 		 ORDER BY COALESCE(m.updated_at, cm.updated_at, c.created_at) DESC`,
-		uid, recentDays,
+		uid, recentDays, recentDays,
 	)
 	if err != nil {
 		return nil, err
@@ -88,7 +85,6 @@ func scanConversationRows(rows interface {
 	return out, rows.Err()
 }
 
-// MergeConversationRows 合并群与私信列表：置顶优先，同组内按最近活动时间降序。
 func MergeConversationRows(groups, directs []ConversationRow) []ConversationRow {
 	out := make([]ConversationRow, 0, len(groups)+len(directs))
 	out = append(out, groups...)
@@ -111,7 +107,6 @@ func sortConversationRows(rows []ConversationRow) {
 		if a.UpdatedAt.Before(b.UpdatedAt) {
 			return 1
 		}
-		// 稳定次序：同置顶、同时间时用 conv_id
 		if a.ID < b.ID {
 			return -1
 		}

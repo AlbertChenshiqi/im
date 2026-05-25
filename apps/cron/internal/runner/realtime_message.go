@@ -59,7 +59,7 @@ func (r *RealtimeMessage) targets(ctx context.Context, evt events.MessageSendEve
 		return evt.RecipientIDs
 	}
 	var out []int64
-	err := forEachGroupMember(ctx, r.svc.Pool, evt.GroupID, r.svc.Config.Cron.MemberBatch, func(uid int64) {
+	err := forEachGroupMember(ctx, r.svc.DB, evt.GroupID, r.svc.Config.Cron.MemberBatch, func(uid int64) {
 		if uid > 0 && uid != evt.SenderID {
 			out = append(out, uid)
 		}

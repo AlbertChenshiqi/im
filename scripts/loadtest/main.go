@@ -12,13 +12,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"database/sql"
 	"github.com/redis/go-redis/v9"
 
 	"im/pkg/bizseq"
 	"im/pkg/convid"
 	"im/pkg/db"
 	"im/pkg/events"
+	"im/pkg/models"
 	"im/pkg/rocketmq"
 	"im/pkg/sessionid"
 )
@@ -31,12 +32,12 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	dsn := getenv("POSTGRES_DSN", "postgres://im:im@localhost:5432/im?sslmode=disable")
-	pool, err := db.NewPool(ctx, dsn)
+	dsn := getenv("MYSQL_DSN", "im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local")
+	sqlDB, err := db.NewDB(dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer pool.Close()
+	defer sqlDB.Close()
 
 	rdb := redis.NewClient(&redis.Options{Addr: getenv("REDIS_ADDR", "localhost:6379")})
 	start := time.Now()
@@ -74,7 +75,8 @@ func main() {
 			MsgID: int64(1_000_000 + i), ConvID: conv, SessionID: sid,
 			ConvType: "group", GroupID: *groupID, SenderID: uid,
 			BizSeq: bizSeq, Seq: bizSeq, SendTs: recvMs, ServerRecvMs: recvMs,
-			MsgType: "text", Content: fmt.Sprintf("load message %d", i), Ts: time.Now().Unix(),
+			Input: []models.MessageInput{{MsgType: "text", Content: fmt.Sprintf(`{"text":"load message %d"}`, i)}},
+			Ts:    time.Now().Unix(),
 		}
 		if err := producer.PublishJSON(ctx, events.TopicChat, events.TagChatGroup, sid, evt); err != nil {
 			log.Fatalf("publish chat: %v", err)
@@ -85,7 +87,7 @@ func main() {
 	}
 
 	elapsed := time.Since(start)
-	lag := measureConsumerLag(ctx, pool)
+	lag := measureConsumerLag(ctx, sqlDB)
 	log.Printf("done: %d msgs in %v, rocketmq consumer hint: check inbox-unread logs", *msgs, elapsed)
 	log.Printf("metrics: redis online keys, unread keys — lag_estimate=%s", lag)
 }
@@ -130,9 +132,9 @@ func createGroup(base, token string, members int) int64 {
 	return out.Group.ID
 }
 
-func measureConsumerLag(ctx context.Context, pool *pgxpool.Pool) string {
+func measureConsumerLag(ctx context.Context, db *sql.DB) string {
 	var cnt int
-	_ = pool.QueryRow(ctx, `SELECT COUNT(*) FROM group_members WHERE group_id=1`).Scan(&cnt)
+	_ = db.QueryRowContext(ctx, `SELECT COUNT(*) FROM group_members WHERE group_id=1`).Scan(&cnt)
 	return fmt.Sprintf("group_members_sample=%d", cnt)
 }
 

@@ -10,8 +10,8 @@ data:
   message-rpc.yaml: |
     Name: message.rpc
     ListenOn: 0.0.0.0:20500
-    Postgres:
-      DSN: postgres://im:im@host.docker.internal:5432/im?sslmode=disable
+    MySQL:
+      DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
     Log:
       ServiceName: message-rpc
       Mode: console

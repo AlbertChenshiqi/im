@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"database/sql"
 
 	"im/apps/cron/internal/svc"
 	"im/pkg/events"
@@ -59,7 +59,7 @@ func (r *InboxUnread) Run(ctx context.Context) {
 }
 
 func (r *InboxUnread) process(ctx context.Context, evt events.MessageSendEvent, b *inboxBatcher) {
-	pool := r.svc.Pool
+	db := r.svc.DB
 	rdb := r.svc.Redis
 	if evt.ConvType == models.ConvTypeC2C || evt.ConvType == models.ConvTypeDirect {
 		for _, uid := range evt.RecipientIDs {
@@ -74,8 +74,8 @@ func (r *InboxUnread) process(ctx context.Context, evt events.MessageSendEvent, 
 		}
 		return
 	}
-	_ = forEachGroupMember(ctx, pool, evt.GroupID, r.memberBatch, func(uid int64) {
-		if uid == evt.SenderID || muted(ctx, pool, evt.GroupID, uid) {
+	_ = forEachGroupMember(ctx, db, evt.GroupID, r.memberBatch, func(uid int64) {
+		if uid == evt.SenderID || muted(ctx, db, evt.GroupID, uid) {
 			return
 		}
 		_ = rdb.IncrUnread(ctx, uid, evt.ConvID, 1)
@@ -86,10 +86,10 @@ func (r *InboxUnread) process(ctx context.Context, evt events.MessageSendEvent, 
 	})
 }
 
-func muted(ctx context.Context, pool *pgxpool.Pool, groupID, uid int64) bool {
+func muted(ctx context.Context, db *sql.DB, groupID, uid int64) bool {
 	var m bool
-	err := pool.QueryRow(ctx,
-		`SELECT muted FROM group_members WHERE group_id=$1 AND user_id=$2`, groupID, uid,
+	err := db.QueryRowContext(ctx,
+		`SELECT muted FROM group_members WHERE group_id=? AND user_id=?`, groupID, uid,
 	).Scan(&m)
 	return err == nil && m
 }

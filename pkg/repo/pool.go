@@ -1,13 +1,11 @@
 package repo
 
 import (
-	"context"
-
-	"github.com/jackc/pgx/v5/pgxpool"
+	"database/sql"
 
 	"im/pkg/db"
 )
 
-func NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
-	return db.NewPool(ctx, dsn)
+func NewPool(dsn string) (*sql.DB, error) {
+	return db.NewDB(dsn)
 }

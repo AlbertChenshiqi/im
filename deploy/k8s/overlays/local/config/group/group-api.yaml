@@ -5,8 +5,8 @@ Auth:
   AccessSecret: dev-secret-change-in-production
   AccessExpire: 604800
   DevMode: true
-Postgres:
-  DSN: postgres://im:im@host.docker.internal:5432/im?sslmode=disable
+MySQL:
+  DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 Log:
   ServiceName: group-api
   Mode: console

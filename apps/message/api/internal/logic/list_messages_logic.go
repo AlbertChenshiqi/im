@@ -7,6 +7,7 @@ import (
 
 	"im/apps/message/api/internal/svc"
 	"im/apps/message/api/internal/types"
+
 )
 
 type ListMessagesLogic struct {
@@ -26,9 +27,12 @@ func (l *ListMessagesLogic) ListMessages(req *types.ListMessagesReq) (*types.Lis
 	}
 	out := make([]types.Message, 0, len(msgs))
 	for _, m := range msgs {
+		parts := make([]types.MessageInput, len(m.Input))
+		for i, it := range m.Input {
+			parts[i] = types.MessageInput{MsgType: it.MsgType, Content: it.Content}
+		}
 		out = append(out, types.Message{
-			Id: m.ID, ConvId: m.ConvID, SenderId: m.SenderID, Seq: m.Seq,
-			MsgType: m.MsgType, Content: m.Content,
+			Id: m.ID, ConvId: m.ConvID, SenderId: m.SenderID, Seq: m.Seq, Input: parts,
 		})
 	}
 	return &types.ListMessagesResp{Messages: out}, nil

@@ -1,7 +1,6 @@
 package svc
 
 import (
-	"context"
 
 	"github.com/zeromicro/go-zero/zrpc"
 
@@ -22,17 +21,17 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	pool := zerokit.MustPGPool(context.Background(), c.Postgres.DSN)
+	db := zerokit.MustMySQL(c.MySQL.DSN)
 	rdb := redisclient.New(c.RedisStore.Addr)
 	producer := rocketmq.MustProducer(c.RocketMQ.NameServer)
 	var groupRpc group_client.Group
 	if len(c.GroupRpc.Endpoints) > 0 {
 		groupRpc = group_client.NewGroup(zrpc.MustNewClient(zrpc.RpcClientConf{Endpoints: c.GroupRpc.Endpoints, NonBlock: true}))
 	}
-	convRepo := repo.NewConversationRepo(pool)
+	convRepo := repo.NewConversationRepo(db)
 	return &ServiceContext{
 		Config:      c,
-		MessageRepo: repo.NewMessageRepo(pool),
+		MessageRepo: repo.NewMessageRepo(db),
 		Sender: &msgcore.Sender{
 			RDB: rdb, Producer: producer, SF: snowflake.New(5), GroupRpc: groupRpc, ConvRepo: convRepo,
 		},

@@ -1,7 +1,6 @@
 package svc
 
 import (
-	"context"
 
 	"im/apps/conversation/api/internal/config"
 	"im/pkg/redisclient"
@@ -16,10 +15,10 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	pool := zerokit.MustPGPool(context.Background(), c.Postgres.DSN)
+	db := zerokit.MustMySQL(c.MySQL.DSN)
 	return &ServiceContext{
 		Config:   c,
-		ConvRepo: repo.NewConversationRepo(pool),
+		ConvRepo: repo.NewConversationRepo(db),
 		Redis:    redisclient.New(c.Redis.Addr),
 	}
 }

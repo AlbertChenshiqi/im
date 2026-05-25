@@ -23,5 +23,10 @@ func (l *WSSendLogic) Send(frame protocol.InFrame, session *hub.Session) (protoc
 		e := protocol.NewErrorOut(code.GatewayNotAuthed)
 		return protocol.SentOut{}, &e
 	}
-	return l.svcCtx.Order.Submit(l.ctx, frame, session.UID())
+	f := frame
+	if err := protocol.NormalizeInput(&f, l.svcCtx.MsgHandlers); err != nil {
+		e := protocol.NewErrorOut(code.GatewayInvalidFrame, err.Error())
+		return protocol.SentOut{}, &e
+	}
+	return l.svcCtx.Order.Submit(l.ctx, f, session.UID())
 }

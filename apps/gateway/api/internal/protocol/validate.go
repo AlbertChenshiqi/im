@@ -11,8 +11,8 @@ func (f *InFrame) Validate() error {
 		if f.ConvId == "" {
 			return fmt.Errorf("conv_id required")
 		}
-		if f.Content == "" {
-			return fmt.Errorf("content required")
+		if len(f.Input) == 0 {
+			return fmt.Errorf("input required")
 		}
 	case TypePing:
 		// no fields

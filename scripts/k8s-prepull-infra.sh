@@ -4,7 +4,7 @@ set -euo pipefail
 CLUSTER_NAME="${K8S_CLUSTER_NAME:-im-local}"
 
 INFRA_IMAGES=(
-  postgres:16-alpine
+  mysql:8.4-alpine
   redis:7-alpine
   apache/rocketmq:5.3.2
 )

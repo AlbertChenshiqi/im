@@ -1,21 +1,19 @@
 package bootstrap
 
 import (
-	"context"
+	"database/sql"
 	"os"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"im/pkg/configzero"
 	"im/pkg/db"
 	"im/pkg/redisclient"
 )
 
-func PostgresDSN() string {
-	if v := os.Getenv("POSTGRES_DSN"); v != "" {
+func MySQLDSN() string {
+	if v := os.Getenv("MYSQL_DSN"); v != "" {
 		return v
 	}
-	return configzero.PostgresDSN
+	return configzero.MySQLDSN
 }
 
 func RedisAddr() string {
@@ -32,8 +30,8 @@ func JWTSecret() string {
 	return configzero.JWTSecret
 }
 
-func NewPGPool(ctx context.Context) (*pgxpool.Pool, error) {
-	return db.NewPool(ctx, PostgresDSN())
+func NewMySQL() (*sql.DB, error) {
+	return db.NewDB(MySQLDSN())
 }
 
 func NewRedis() *redisclient.Client {

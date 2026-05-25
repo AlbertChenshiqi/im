@@ -7,6 +7,7 @@ import (
 
 	"im/apps/message/rpc/internal/svc"
 	"im/apps/message/rpc/message"
+
 )
 
 type ListMessagesLogic struct {
@@ -26,9 +27,12 @@ func (l *ListMessagesLogic) ListMessages(in *message.ListMessagesReq) (*message.
 	}
 	out := make([]*message.MessageItem, 0, len(msgs))
 	for _, m := range msgs {
+		parts := make([]*message.InputPart, len(m.Input))
+		for i, it := range m.Input {
+			parts[i] = &message.InputPart{MsgType: it.MsgType, Content: it.Content}
+		}
 		out = append(out, &message.MessageItem{
-			Id: m.ID, ConvId: m.ConvID, SenderId: m.SenderID, Seq: m.Seq,
-			MsgType: m.MsgType, Content: m.Content,
+			Id: m.ID, ConvId: m.ConvID, SenderId: m.SenderID, Seq: m.Seq, Input: parts,
 		})
 	}
 	return &message.ListMessagesResp{Messages: out}, nil

@@ -13,11 +13,15 @@ type ListMessagesResp struct {
 	Messages []Message `json:"messages"`
 }
 
+type MessageInput struct {
+	MsgType string `json:"msgType"`
+	Content string `json:"content"`
+}
+
 type Message struct {
-	Id       int64  `json:"id"`
-	ConvId   string `json:"conv_id"`
-	SenderId int64  `json:"sender_id"`
-	Seq      int64  `json:"seq"`
-	MsgType  string `json:"msg_type"`
-	Content  string `json:"content"`
+	Id       int64          `json:"id"`
+	ConvId   string         `json:"conv_id"`
+	SenderId int64          `json:"sender_id"`
+	Seq      int64          `json:"seq"`
+	Input    []MessageInput `json:"input"`
 }

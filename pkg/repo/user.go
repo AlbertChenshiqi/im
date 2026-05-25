@@ -2,44 +2,48 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"im/pkg/models"
+	"im/pkg/sqlutil"
 )
 
 type UserRepo struct {
-	pool *pgxpool.Pool
+	db *sql.DB
 }
 
-func NewUserRepo(pool *pgxpool.Pool) *UserRepo {
-	return &UserRepo{pool: pool}
+func NewUserRepo(db *sql.DB) *UserRepo {
+	return &UserRepo{db: db}
 }
 
 func (r *UserRepo) CreateUser(ctx context.Context, username, hash, nickname string) (*models.User, error) {
-	var u models.User
-	err := r.pool.QueryRow(ctx,
-		`INSERT INTO users (username, password_hash, nickname) VALUES ($1,$2,$3)
-		 RETURNING id, username, nickname, avatar_url, created_at`,
+	res, err := r.db.ExecContext(ctx,
+		`INSERT INTO users (username, password_hash, nickname) VALUES (?,?,?)`,
 		username, hash, nickname,
-	).Scan(&u.ID, &u.Username, &u.Nickname, &u.AvatarURL, &u.CreatedAt)
-	return &u, err
+	)
+	if err != nil {
+		return nil, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+	return r.GetByID(ctx, id)
 }
 
 func (r *UserRepo) GetByUsername(ctx context.Context, username string) (id int64, hash string, err error) {
-	err = r.pool.QueryRow(ctx,
-		`SELECT id, password_hash FROM users WHERE username=$1`, username,
+	err = r.db.QueryRowContext(ctx,
+		`SELECT id, password_hash FROM users WHERE username=?`, username,
 	).Scan(&id, &hash)
 	return
 }
 
 func (r *UserRepo) GetByID(ctx context.Context, id int64) (*models.User, error) {
 	var u models.User
-	err := r.pool.QueryRow(ctx,
-		`SELECT id, username, nickname, avatar_url, created_at FROM users WHERE id=$1`, id,
+	err := r.db.QueryRowContext(ctx,
+		`SELECT id, username, nickname, avatar_url, created_at FROM users WHERE id=?`, id,
 	).Scan(&u.ID, &u.Username, &u.Nickname, &u.AvatarURL, &u.CreatedAt)
 	if err != nil {
 		return nil, err
@@ -47,7 +51,6 @@ func (r *UserRepo) GetByID(ctx context.Context, id int64) (*models.User, error) 
 	return &u, nil
 }
 
-// EnsureDevUser 开发用：保证 user_id 存在，不存在则创建占位用户
 func (r *UserRepo) EnsureDevUser(ctx context.Context, id int64) (*models.User, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid user id")
@@ -56,31 +59,28 @@ func (r *UserRepo) EnsureDevUser(ctx context.Context, id int64) (*models.User, e
 	if err == nil {
 		return u, nil
 	}
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 	username := fmt.Sprintf("dev_%d", id)
 	nickname := fmt.Sprintf("Dev %d", id)
-	var created models.User
-	err = r.pool.QueryRow(ctx,
-		`INSERT INTO users (id, username, password_hash, nickname)
-		 VALUES ($1, $2, '', $3)
-		 ON CONFLICT (id) DO UPDATE SET updated_at = NOW()
-		 RETURNING id, username, nickname, avatar_url, created_at`,
+	_, err = r.db.ExecContext(ctx,
+		`INSERT INTO users (id, username, password_hash, nickname) VALUES (?,?,'',?)
+		 ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP(3)`,
 		id, username, nickname,
-	).Scan(&created.ID, &created.Username, &created.Nickname, &created.AvatarURL, &created.CreatedAt)
+	)
 	if err != nil {
 		return nil, err
 	}
-	return &created, nil
+	return r.GetByID(ctx, id)
 }
 
-// FindMissingIDs 返回 users 表中不存在的 id
 func (r *UserRepo) FindMissingIDs(ctx context.Context, ids []int64) ([]int64, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	rows, err := r.pool.Query(ctx, `SELECT id FROM users WHERE id = ANY($1)`, ids)
+	q := `SELECT id FROM users WHERE id IN (` + sqlutil.Placeholders(len(ids)) + `)`
+	rows, err := r.db.QueryContext(ctx, q, sqlutil.Int64Args(ids)...)
 	if err != nil {
 		return nil, err
 	}
@@ -109,9 +109,9 @@ func (r *UserRepo) BatchGetByIDs(ctx context.Context, ids []int64) ([]*models.Us
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	rows, err := r.pool.Query(ctx,
-		`SELECT id, username, nickname, avatar_url, created_at FROM users WHERE id = ANY($1)`, ids,
-	)
+	q := `SELECT id, username, nickname, avatar_url, created_at FROM users WHERE id IN (` +
+		sqlutil.Placeholders(len(ids)) + `)`
+	rows, err := r.db.QueryContext(ctx, q, sqlutil.Int64Args(ids)...)
 	if err != nil {
 		return nil, err
 	}
@@ -128,10 +128,10 @@ func (r *UserRepo) BatchGetByIDs(ctx context.Context, ids []int64) ([]*models.Us
 }
 
 func (r *UserRepo) UpsertDevice(ctx context.Context, userID int64, deviceID, pushToken, platform string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.db.ExecContext(ctx,
 		`INSERT INTO user_devices (user_id, device_id, push_token, platform, updated_at)
-		 VALUES ($1,$2,$3,$4,NOW())
-		 ON CONFLICT (user_id, device_id) DO UPDATE SET push_token=$3, platform=$4, updated_at=NOW()`,
+		 VALUES (?,?,?,?,CURRENT_TIMESTAMP(3))
+		 ON DUPLICATE KEY UPDATE push_token=VALUES(push_token), platform=VALUES(platform), updated_at=CURRENT_TIMESTAMP(3)`,
 		userID, deviceID, pushToken, platform,
 	)
 	return err

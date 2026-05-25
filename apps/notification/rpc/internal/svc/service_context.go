@@ -1,7 +1,6 @@
 package svc
 
 import (
-	"context"
 
 	"im/apps/notification/rpc/internal/config"
 	"im/pkg/repo"
@@ -16,10 +15,10 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	pool := zerokit.MustPGPool(context.Background(), c.Postgres.DSN)
+	db := zerokit.MustMySQL(c.MySQL.DSN)
 	return &ServiceContext{
 		Config:           c,
-		NotificationRepo: repo.NewNotificationRepo(pool),
+		NotificationRepo: repo.NewNotificationRepo(db),
 		Producer:         rocketmq.MustProducer(c.RocketMQ.NameServer),
 	}
 }

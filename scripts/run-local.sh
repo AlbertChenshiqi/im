@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-export POSTGRES_DSN="${POSTGRES_DSN:-postgres://im:im@localhost:5432/im?sslmode=disable}"
+export MYSQL_DSN="im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local"
 export REDIS_ADDR="${REDIS_ADDR:-localhost:6379}"
 export ROCKETMQ_NAMESERVER="${ROCKETMQ_NAMESERVER:-localhost:9876}"
 export JWT_SECRET="${JWT_SECRET:-dev-secret-change-in-production}"

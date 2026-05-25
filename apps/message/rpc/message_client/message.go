@@ -14,6 +14,7 @@ import (
 )
 
 type (
+	InputPart        = message.InputPart
 	ListMessagesReq  = message.ListMessagesReq
 	ListMessagesResp = message.ListMessagesResp
 	MessageItem      = message.MessageItem

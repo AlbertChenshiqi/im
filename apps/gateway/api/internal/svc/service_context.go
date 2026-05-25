@@ -7,14 +7,16 @@ import (
 	"im/apps/gateway/api/internal/order"
 	"im/apps/message/rpc/message_client"
 	"im/pkg/bizseq"
+	"im/pkg/msghandler"
 	"im/pkg/redisclient"
 )
 
 type ServiceContext struct {
-	Config     config.Config
-	MessageRpc message_client.Message
-	Redis      *redisclient.Client
-	Order      *order.Coordinator
+	Config      config.Config
+	MessageRpc  message_client.Message
+	Redis       *redisclient.Client
+	Order       *order.Coordinator
+	MsgHandlers *msghandler.Registry
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -27,7 +29,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MessageRpc: message_client.NewMessage(zrpc.MustNewClient(zrpc.RpcClientConf{
 			Endpoints: c.MessageRpc.Endpoints, NonBlock: true,
 		})),
-		Redis: redisclient.New(c.Redis.Addr),
+		Redis:       redisclient.New(c.Redis.Addr),
+		MsgHandlers: msghandler.DefaultRegistry(),
 	}
 	s.Order = order.NewCoordinator(s.MessageRpc, s.Redis, windowMs)
 	return s

@@ -9,7 +9,7 @@ type Config struct {
 		AccessExpire int64
 		DevMode      bool `json:",optional"`
 	}
-	Postgres struct {
+	MySQL struct {
 		DSN string
 	}
 }

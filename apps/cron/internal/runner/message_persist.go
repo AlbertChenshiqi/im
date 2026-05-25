@@ -8,6 +8,7 @@ import (
 	"im/apps/cron/internal/svc"
 	"im/pkg/events"
 	"im/pkg/models"
+	"im/pkg/msgbody"
 	"im/pkg/rocketmq"
 	"im/pkg/store"
 )
@@ -39,18 +40,18 @@ func (r *MessagePersist) Run(ctx context.Context) {
 		}
 		msg := &models.Message{
 			ID: evt.MsgID, ConvID: evt.ConvID, SenderID: evt.SenderID, Seq: seq,
-			ClientMsgID: evt.ClientMsgID, MsgType: evt.MsgType, Content: evt.Content,
+			ClientMsgID: evt.ClientMsgID, Input: evt.Input,
 			CreatedAt: store.MessageTime(evt.Ts),
 		}
-		if err := store.InsertMessage(ctx, r.svc.Pool, msg); err != nil {
+		if err := store.InsertMessage(ctx, r.svc.DB, msg); err != nil {
 			log.Printf("[cron] insert msg conv=%s biz_seq=%d: %v", evt.ConvID, seq, err)
 			return err
 		}
-		preview := evt.Content
+		preview := msgbody.Preview(evt.Input)
 		if len(preview) > 120 {
 			preview = preview[:120]
 		}
-		if err := store.UpdateConvMeta(ctx, r.svc.Pool, evt.ConvID, seq, evt.MsgID, preview); err != nil {
+		if err := store.UpdateConvMeta(ctx, r.svc.DB, evt.ConvID, seq, evt.MsgID, preview); err != nil {
 			log.Printf("[cron] update conv meta conv=%s: %v", evt.ConvID, err)
 			return err
 		}

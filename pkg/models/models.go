@@ -9,7 +9,9 @@ const (
 	// ConvTypeDirect 兼容旧库/旧事件中的 type 字段
 	ConvTypeDirect = "direct"
 
-	MsgTypeText = "text"
+	MsgTypeText  = "text"
+	MsgTypeImage = "image"
+	MsgTypeEmoji = "emoji"
 
 	FriendPending  = "pending"
 	FriendAccepted = "accepted"
@@ -49,14 +51,13 @@ type Conversation struct {
 }
 
 type Message struct {
-	ID          int64     `json:"id"`
-	ConvID      string    `json:"conv_id"`
-	SenderID    int64     `json:"sender_id"`
-	Seq         int64     `json:"seq"`
-	ClientMsgID string    `json:"client_msg_id,omitempty"`
-	MsgType     string    `json:"msg_type"`
-	Content     string    `json:"content"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          int64          `json:"id"`
+	ConvID      string         `json:"conv_id"`
+	SenderID    int64          `json:"sender_id"`
+	Seq         int64          `json:"seq"`
+	ClientMsgID string         `json:"client_msg_id,omitempty"`
+	Input       []MessageInput `json:"input"`
+	CreatedAt   time.Time      `json:"created_at"`
 }
 
 type BadgePayload struct {

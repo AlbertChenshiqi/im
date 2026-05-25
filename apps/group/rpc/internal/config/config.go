@@ -4,7 +4,7 @@ import "github.com/zeromicro/go-zero/zrpc"
 
 type Config struct {
 	zrpc.RpcServerConf
-	Postgres struct {
+	MySQL struct {
 		DSN string
 	}
 }

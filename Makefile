@@ -61,7 +61,7 @@ k8s-etc:
 	HOST_INFRA="$(HOST_INFRA)" ./scripts/write-k8s-etc.sh
 	GATEWAY_REPLICAS=$(GATEWAY_REPLICAS) ./scripts/gen-k8s-manifests.sh
 
-# 本机 Docker 跑 Postgres / Redis / RocketMQ（deploy/docker/docker-compose.yml）
+# 本机 Docker 跑 MySQL / Redis / RocketMQ（deploy/docker/docker-compose.yml）
 host-infra-up:
 	chmod +x scripts/host-infra-up.sh
 	./scripts/host-infra-up.sh
@@ -78,7 +78,7 @@ k8s-up:
 	chmod +x scripts/k8s-up.sh scripts/k8s-load-images.sh scripts/k8s-prepull-infra.sh scripts/host-infra-up.sh
 	HOST_INFRA="$(HOST_INFRA)" ./scripts/k8s-up.sh
 
-# 仅预拉取并载入 Postgres / Redis / RocketMQ（修复 ImagePullBackOff）
+# 仅预拉取并载入 MySQL / Redis / RocketMQ（修复 ImagePullBackOff）
 k8s-prepull-infra:
 	chmod +x scripts/k8s-prepull-infra.sh
 	./scripts/k8s-prepull-infra.sh
@@ -123,12 +123,12 @@ run-all: build
 	./scripts/run-local.sh
 
 migrate:
-	@if command -v psql >/dev/null 2>&1; then \
-		psql "postgres://im:im@localhost:5432/im?sslmode=disable" -v ON_ERROR_STOP=1 -f migrations/001_init.sql; \
-	elif docker inspect im-postgres >/dev/null 2>&1; then \
-		docker exec -i im-postgres psql -U im -d im -v ON_ERROR_STOP=1 < migrations/001_init.sql; \
+	@if command -v mysql >/dev/null 2>&1; then \
+		mysql -uim -pim im < migrations/001_init.sql; \
+	elif docker inspect im-mysql >/dev/null 2>&1; then \
+		docker exec -i im-mysql mysql -uim -pim im < migrations/001_init.sql; \
 	else \
-		echo "需要 psql 或运行中的 im-postgres 容器（先 make up）"; exit 1; \
+		echo "需要 mysql 客户端或运行中的 im-mysql 容器（先 make up）"; exit 1; \
 	fi
 
 test:

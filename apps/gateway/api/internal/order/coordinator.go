@@ -84,11 +84,14 @@ func (c *Coordinator) Submit(ctx context.Context, frame protocol.InFrame, uid in
 }
 
 func (c *Coordinator) dispatchRPC(ctx context.Context, it pendingItem, bizSeq int64) (protocol.SentOut, *protocol.ErrorOut) {
+	parts := make([]*message.InputPart, len(it.frame.Input))
+	for i, item := range it.frame.Input {
+		parts[i] = &message.InputPart{MsgType: item.MsgType, Content: item.Content}
+	}
 	resp, err := c.messageRpc.Send(ctx, &message.SendReq{
 		SenderId:     it.uid,
 		ConvId:       it.frame.ConvId,
-		Content:      it.frame.Content,
-		MsgType:      it.frame.MsgType,
+		Input:        parts,
 		ClientMsgId:  it.frame.ClientMsgId,
 		SendTs:       it.sendTs,
 		BizSeq:       bizSeq,

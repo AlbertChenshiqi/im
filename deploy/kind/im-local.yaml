@@ -35,7 +35,7 @@ nodes:
         hostPort: 10800
         protocol: TCP
       # 基础设施（集群内 infra 时 NodePort → 本机；HOST_INFRA=1 时走本机 Docker 直连）
-      - containerPort: 30432
+      - containerPort: 30306
         hostPort: 5432
         protocol: TCP
       - containerPort: 30637

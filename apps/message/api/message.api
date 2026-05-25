@@ -4,13 +4,17 @@ info (
 	title: "Message API"
 )
 
+type MessageInput {
+	MsgType string `json:"msgType"`
+	Content string `json:"content"`
+}
+
 type Message {
-	Id       int64  `json:"id"`
-	ConvId   string `json:"conv_id"`
-	SenderId int64  `json:"sender_id"`
-	Seq      int64  `json:"seq"`
-	MsgType  string `json:"msg_type"`
-	Content  string `json:"content"`
+	Id       int64          `json:"id"`
+	ConvId   string         `json:"conv_id"`
+	SenderId int64          `json:"sender_id"`
+	Seq      int64          `json:"seq"`
+	Input    []MessageInput `json:"input"`
 }
 
 type ListMessagesReq {

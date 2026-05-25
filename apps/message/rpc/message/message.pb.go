@@ -21,23 +21,74 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type InputPart struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MsgType       string                 `protobuf:"bytes,1,opt,name=msg_type,json=msgType,proto3" json:"msg_type,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InputPart) Reset() {
+	*x = InputPart{}
+	mi := &file_message_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InputPart) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InputPart) ProtoMessage() {}
+
+func (x *InputPart) ProtoReflect() protoreflect.Message {
+	mi := &file_message_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InputPart.ProtoReflect.Descriptor instead.
+func (*InputPart) Descriptor() ([]byte, []int) {
+	return file_message_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *InputPart) GetMsgType() string {
+	if x != nil {
+		return x.MsgType
+	}
+	return ""
+}
+
+func (x *InputPart) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
 type SendReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SenderId      int64                  `protobuf:"varint,1,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`
 	ConvId        string                 `protobuf:"bytes,2,opt,name=conv_id,json=convId,proto3" json:"conv_id,omitempty"`
-	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
-	MsgType       string                 `protobuf:"bytes,4,opt,name=msg_type,json=msgType,proto3" json:"msg_type,omitempty"`
-	ClientMsgId   string                 `protobuf:"bytes,5,opt,name=client_msg_id,json=clientMsgId,proto3" json:"client_msg_id,omitempty"`
-	SendTs        int64                  `protobuf:"varint,6,opt,name=send_ts,json=sendTs,proto3" json:"send_ts,omitempty"`                     // 客户端发送时间(ms)
-	BizSeq        int64                  `protobuf:"varint,7,opt,name=biz_seq,json=bizSeq,proto3" json:"biz_seq,omitempty"`                     // 网关分配的全局业务序号
-	ServerRecvMs  int64                  `protobuf:"varint,8,opt,name=server_recv_ms,json=serverRecvMs,proto3" json:"server_recv_ms,omitempty"` // 网关接收时间(ms)
+	ClientMsgId   string                 `protobuf:"bytes,3,opt,name=client_msg_id,json=clientMsgId,proto3" json:"client_msg_id,omitempty"`
+	SendTs        int64                  `protobuf:"varint,4,opt,name=send_ts,json=sendTs,proto3" json:"send_ts,omitempty"`                     // 客户端发送时间(ms)
+	BizSeq        int64                  `protobuf:"varint,5,opt,name=biz_seq,json=bizSeq,proto3" json:"biz_seq,omitempty"`                     // 网关分配的全局业务序号
+	ServerRecvMs  int64                  `protobuf:"varint,6,opt,name=server_recv_ms,json=serverRecvMs,proto3" json:"server_recv_ms,omitempty"` // 网关接收时间(ms)
+	Input         []*InputPart           `protobuf:"bytes,7,rep,name=input,proto3" json:"input,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SendReq) Reset() {
 	*x = SendReq{}
-	mi := &file_message_proto_msgTypes[0]
+	mi := &file_message_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +100,7 @@ func (x *SendReq) String() string {
 func (*SendReq) ProtoMessage() {}
 
 func (x *SendReq) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[0]
+	mi := &file_message_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +113,7 @@ func (x *SendReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendReq.ProtoReflect.Descriptor instead.
 func (*SendReq) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{0}
+	return file_message_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *SendReq) GetSenderId() int64 {
@@ -75,20 +126,6 @@ func (x *SendReq) GetSenderId() int64 {
 func (x *SendReq) GetConvId() string {
 	if x != nil {
 		return x.ConvId
-	}
-	return ""
-}
-
-func (x *SendReq) GetContent() string {
-	if x != nil {
-		return x.Content
-	}
-	return ""
-}
-
-func (x *SendReq) GetMsgType() string {
-	if x != nil {
-		return x.MsgType
 	}
 	return ""
 }
@@ -121,6 +158,13 @@ func (x *SendReq) GetServerRecvMs() int64 {
 	return 0
 }
 
+func (x *SendReq) GetInput() []*InputPart {
+	if x != nil {
+		return x.Input
+	}
+	return nil
+}
+
 type SendResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MsgId         int64                  `protobuf:"varint,1,opt,name=msg_id,json=msgId,proto3" json:"msg_id,omitempty"`
@@ -131,7 +175,7 @@ type SendResp struct {
 
 func (x *SendResp) Reset() {
 	*x = SendResp{}
-	mi := &file_message_proto_msgTypes[1]
+	mi := &file_message_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -143,7 +187,7 @@ func (x *SendResp) String() string {
 func (*SendResp) ProtoMessage() {}
 
 func (x *SendResp) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[1]
+	mi := &file_message_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -156,7 +200,7 @@ func (x *SendResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendResp.ProtoReflect.Descriptor instead.
 func (*SendResp) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{1}
+	return file_message_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *SendResp) GetMsgId() int64 {
@@ -184,7 +228,7 @@ type ListMessagesReq struct {
 
 func (x *ListMessagesReq) Reset() {
 	*x = ListMessagesReq{}
-	mi := &file_message_proto_msgTypes[2]
+	mi := &file_message_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -196,7 +240,7 @@ func (x *ListMessagesReq) String() string {
 func (*ListMessagesReq) ProtoMessage() {}
 
 func (x *ListMessagesReq) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[2]
+	mi := &file_message_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -209,7 +253,7 @@ func (x *ListMessagesReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMessagesReq.ProtoReflect.Descriptor instead.
 func (*ListMessagesReq) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{2}
+	return file_message_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ListMessagesReq) GetConvId() string {
@@ -239,15 +283,14 @@ type MessageItem struct {
 	ConvId        string                 `protobuf:"bytes,2,opt,name=conv_id,json=convId,proto3" json:"conv_id,omitempty"`
 	SenderId      int64                  `protobuf:"varint,3,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`
 	Seq           int64                  `protobuf:"varint,4,opt,name=seq,proto3" json:"seq,omitempty"`
-	MsgType       string                 `protobuf:"bytes,5,opt,name=msg_type,json=msgType,proto3" json:"msg_type,omitempty"`
-	Content       string                 `protobuf:"bytes,6,opt,name=content,proto3" json:"content,omitempty"`
+	Input         []*InputPart           `protobuf:"bytes,5,rep,name=input,proto3" json:"input,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *MessageItem) Reset() {
 	*x = MessageItem{}
-	mi := &file_message_proto_msgTypes[3]
+	mi := &file_message_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -259,7 +302,7 @@ func (x *MessageItem) String() string {
 func (*MessageItem) ProtoMessage() {}
 
 func (x *MessageItem) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[3]
+	mi := &file_message_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -272,7 +315,7 @@ func (x *MessageItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageItem.ProtoReflect.Descriptor instead.
 func (*MessageItem) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{3}
+	return file_message_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *MessageItem) GetId() int64 {
@@ -303,18 +346,11 @@ func (x *MessageItem) GetSeq() int64 {
 	return 0
 }
 
-func (x *MessageItem) GetMsgType() string {
+func (x *MessageItem) GetInput() []*InputPart {
 	if x != nil {
-		return x.MsgType
+		return x.Input
 	}
-	return ""
-}
-
-func (x *MessageItem) GetContent() string {
-	if x != nil {
-		return x.Content
-	}
-	return ""
+	return nil
 }
 
 type ListMessagesResp struct {
@@ -326,7 +362,7 @@ type ListMessagesResp struct {
 
 func (x *ListMessagesResp) Reset() {
 	*x = ListMessagesResp{}
-	mi := &file_message_proto_msgTypes[4]
+	mi := &file_message_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -338,7 +374,7 @@ func (x *ListMessagesResp) String() string {
 func (*ListMessagesResp) ProtoMessage() {}
 
 func (x *ListMessagesResp) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[4]
+	mi := &file_message_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -351,7 +387,7 @@ func (x *ListMessagesResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMessagesResp.ProtoReflect.Descriptor instead.
 func (*ListMessagesResp) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{4}
+	return file_message_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListMessagesResp) GetMessages() []*MessageItem {
@@ -365,16 +401,18 @@ var File_message_proto protoreflect.FileDescriptor
 
 const file_message_proto_rawDesc = "" +
 	"\n" +
-	"\rmessage.proto\x12\amessage\"\xf0\x01\n" +
+	"\rmessage.proto\x12\amessage\"@\n" +
+	"\tInputPart\x12\x19\n" +
+	"\bmsg_type\x18\x01 \x01(\tR\amsgType\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\"\xe5\x01\n" +
 	"\aSendReq\x12\x1b\n" +
 	"\tsender_id\x18\x01 \x01(\x03R\bsenderId\x12\x17\n" +
-	"\aconv_id\x18\x02 \x01(\tR\x06convId\x12\x18\n" +
-	"\acontent\x18\x03 \x01(\tR\acontent\x12\x19\n" +
-	"\bmsg_type\x18\x04 \x01(\tR\amsgType\x12\"\n" +
-	"\rclient_msg_id\x18\x05 \x01(\tR\vclientMsgId\x12\x17\n" +
-	"\asend_ts\x18\x06 \x01(\x03R\x06sendTs\x12\x17\n" +
-	"\abiz_seq\x18\a \x01(\x03R\x06bizSeq\x12$\n" +
-	"\x0eserver_recv_ms\x18\b \x01(\x03R\fserverRecvMs\"3\n" +
+	"\aconv_id\x18\x02 \x01(\tR\x06convId\x12\"\n" +
+	"\rclient_msg_id\x18\x03 \x01(\tR\vclientMsgId\x12\x17\n" +
+	"\asend_ts\x18\x04 \x01(\x03R\x06sendTs\x12\x17\n" +
+	"\abiz_seq\x18\x05 \x01(\x03R\x06bizSeq\x12$\n" +
+	"\x0eserver_recv_ms\x18\x06 \x01(\x03R\fserverRecvMs\x12(\n" +
+	"\x05input\x18\a \x03(\v2\x12.message.InputPartR\x05input\"3\n" +
 	"\bSendResp\x12\x15\n" +
 	"\x06msg_id\x18\x01 \x01(\x03R\x05msgId\x12\x10\n" +
 	"\x03seq\x18\x02 \x01(\x03R\x03seq\"_\n" +
@@ -382,14 +420,13 @@ const file_message_proto_rawDesc = "" +
 	"\aconv_id\x18\x01 \x01(\tR\x06convId\x12\x1d\n" +
 	"\n" +
 	"before_seq\x18\x02 \x01(\x03R\tbeforeSeq\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\x05R\x05limit\"\x9a\x01\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\"\x8f\x01\n" +
 	"\vMessageItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
 	"\aconv_id\x18\x02 \x01(\tR\x06convId\x12\x1b\n" +
 	"\tsender_id\x18\x03 \x01(\x03R\bsenderId\x12\x10\n" +
-	"\x03seq\x18\x04 \x01(\x03R\x03seq\x12\x19\n" +
-	"\bmsg_type\x18\x05 \x01(\tR\amsgType\x12\x18\n" +
-	"\acontent\x18\x06 \x01(\tR\acontent\"D\n" +
+	"\x03seq\x18\x04 \x01(\x03R\x03seq\x12(\n" +
+	"\x05input\x18\x05 \x03(\v2\x12.message.InputPartR\x05input\"D\n" +
 	"\x10ListMessagesResp\x120\n" +
 	"\bmessages\x18\x01 \x03(\v2\x14.message.MessageItemR\bmessages2{\n" +
 	"\aMessage\x12+\n" +
@@ -408,25 +445,28 @@ func file_message_proto_rawDescGZIP() []byte {
 	return file_message_proto_rawDescData
 }
 
-var file_message_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_message_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_message_proto_goTypes = []any{
-	(*SendReq)(nil),          // 0: message.SendReq
-	(*SendResp)(nil),         // 1: message.SendResp
-	(*ListMessagesReq)(nil),  // 2: message.ListMessagesReq
-	(*MessageItem)(nil),      // 3: message.MessageItem
-	(*ListMessagesResp)(nil), // 4: message.ListMessagesResp
+	(*InputPart)(nil),        // 0: message.InputPart
+	(*SendReq)(nil),          // 1: message.SendReq
+	(*SendResp)(nil),         // 2: message.SendResp
+	(*ListMessagesReq)(nil),  // 3: message.ListMessagesReq
+	(*MessageItem)(nil),      // 4: message.MessageItem
+	(*ListMessagesResp)(nil), // 5: message.ListMessagesResp
 }
 var file_message_proto_depIdxs = []int32{
-	3, // 0: message.ListMessagesResp.messages:type_name -> message.MessageItem
-	0, // 1: message.Message.Send:input_type -> message.SendReq
-	2, // 2: message.Message.ListMessages:input_type -> message.ListMessagesReq
-	1, // 3: message.Message.Send:output_type -> message.SendResp
-	4, // 4: message.Message.ListMessages:output_type -> message.ListMessagesResp
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // 0: message.SendReq.input:type_name -> message.InputPart
+	0, // 1: message.MessageItem.input:type_name -> message.InputPart
+	4, // 2: message.ListMessagesResp.messages:type_name -> message.MessageItem
+	1, // 3: message.Message.Send:input_type -> message.SendReq
+	3, // 4: message.Message.ListMessages:input_type -> message.ListMessagesReq
+	2, // 5: message.Message.Send:output_type -> message.SendResp
+	5, // 6: message.Message.ListMessages:output_type -> message.ListMessagesResp
+	5, // [5:7] is the sub-list for method output_type
+	3, // [3:5] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_message_proto_init() }
@@ -440,7 +480,7 @@ func file_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_message_proto_rawDesc), len(file_message_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

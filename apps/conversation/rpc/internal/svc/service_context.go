@@ -1,7 +1,6 @@
 package svc
 
 import (
-	"context"
 
 	"im/apps/conversation/rpc/internal/config"
 	"im/pkg/repo"
@@ -14,6 +13,6 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	pool := zerokit.MustPGPool(context.Background(), c.Postgres.DSN)
-	return &ServiceContext{Config: c, ConvRepo: repo.NewConversationRepo(pool)}
+	db := zerokit.MustMySQL(c.MySQL.DSN)
+	return &ServiceContext{Config: c, ConvRepo: repo.NewConversationRepo(db)}
 }

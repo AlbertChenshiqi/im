@@ -1,7 +1,7 @@
 Name: group.rpc
 ListenOn: 0.0.0.0:20300
-Postgres:
-  DSN: postgres://im:im@host.docker.internal:5432/im?sslmode=disable
+MySQL:
+  DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 Log:
   ServiceName: group-rpc
   Mode: console

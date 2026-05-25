@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DSN='postgres://im:im@localhost:5432/im?sslmode=disable'
+DSN="im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local"
 SECRET='dev-secret-change-in-production'
 
 append_log() {
@@ -29,8 +29,8 @@ Auth:
   AccessSecret: ${SECRET}
   AccessExpire: 604800
 ${dev_line}
-Postgres:
-  DSN: ${DSN}
+MySQL:
+  DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 EOF
   append_log "${name}-api" "$ROOT/apps/$name/api/etc/${name}-api.yaml"
 }
@@ -41,8 +41,8 @@ write_rpc() {
   cat > "$ROOT/apps/$name/rpc/etc/${name}.yaml" <<EOF
 Name: ${name}.rpc
 ListenOn: 0.0.0.0:${port}
-Postgres:
-  DSN: ${DSN}
+MySQL:
+  DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 EOF
   append_log "${name}-rpc" "$ROOT/apps/$name/rpc/etc/${name}.yaml"
 }
@@ -53,8 +53,8 @@ Name: user.rpc
 ListenOn: 0.0.0.0:20100
 JwtAuth:
   AccessSecret: ${SECRET}
-Postgres:
-  DSN: ${DSN}
+MySQL:
+  DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 EOF
   append_log user-rpc "$ROOT/apps/user/rpc/etc/user.yaml"
 }
@@ -121,8 +121,8 @@ EOF
 cat > "$ROOT/apps/cron/etc/cron.yaml" <<EOF
 Name: cron
 HealthPort: 10800
-Postgres:
-  DSN: ${DSN}
+MySQL:
+  DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 Redis:
   Addr: localhost:6379
 RocketMQ:

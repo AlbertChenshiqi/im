@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 生成 K8s 本地 overlay 用配置（Service DNS：postgres / redis / rocketmq-namesrv / *-rpc）
+# 生成 K8s 本地 overlay 用配置（Service DNS：mysql / redis / rocketmq-namesrv / *-rpc）
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/deploy/k8s/overlays/local/config"
@@ -10,11 +10,11 @@ SECRET='dev-secret-change-in-production'
 
 if [[ "${HOST_INFRA:-0}" == "1" ]]; then
   HOST="${HOST_INFRA_ADDR:-host.docker.internal}"
-  DSN="postgres://im:im@${HOST}:5432/im?sslmode=disable"
+  DSN="im:im@tcp(${HOST}:3306)/im?parseTime=true&charset=utf8mb4&loc=Local"
   REDIS="${HOST}:6379"
   ROCKETMQ="${HOST}:9876"
 else
-  DSN='postgres://im:im@postgres:5432/im?sslmode=disable'
+  DSN="im:im@tcp(mysql:3306)/im?parseTime=true&charset=utf8mb4&loc=Local"
   REDIS='redis:6379'
   ROCKETMQ='rocketmq-namesrv:9876'
 fi
@@ -45,8 +45,8 @@ Auth:
   AccessSecret: ${SECRET}
   AccessExpire: 604800
 ${dev_line}
-Postgres:
-  DSN: ${DSN}
+MySQL:
+  DSN: im:im@tcp(mysql:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 EOF
   append_log "${domain}-api" "$file"
 }
@@ -57,8 +57,8 @@ write_rpc() {
   cat >"$file" <<EOF
 Name: ${domain}.rpc
 ListenOn: 0.0.0.0:${port}
-Postgres:
-  DSN: ${DSN}
+MySQL:
+  DSN: im:im@tcp(mysql:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 EOF
   append_log "${domain}-rpc" "$file"
 }
@@ -77,8 +77,8 @@ Name: user.rpc
 ListenOn: 0.0.0.0:20100
 JwtAuth:
   AccessSecret: ${SECRET}
-Postgres:
-  DSN: ${DSN}
+MySQL:
+  DSN: im:im@tcp(mysql:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 EOF
 append_log user-rpc "$OUT/user/user-rpc.yaml"
 
@@ -132,8 +132,8 @@ EOF
 cat >"$OUT/cron/cron.yaml" <<EOF
 Name: cron
 HealthPort: 10800
-Postgres:
-  DSN: ${DSN}
+MySQL:
+  DSN: im:im@tcp(mysql:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 Redis:
   Addr: ${REDIS}
 RocketMQ:
@@ -198,7 +198,7 @@ KUST="$ROOT/deploy/k8s/overlays/local/kustomization.yaml"
   if [[ "${HOST_INFRA:-0}" != "1" ]]; then
     echo ""
     echo "configMapGenerator:"
-    echo "  - name: postgres-init"
+    echo "  - name: mysql-init"
     echo "    files:"
     echo "      - 001_init.sql=migrations/001_init.sql"
     echo ""

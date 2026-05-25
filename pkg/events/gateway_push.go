@@ -16,10 +16,9 @@ type WSMessagePush struct {
 	ConvType    string `json:"conv_type"`
 	SenderID    int64  `json:"sender_id"`
 	Seq         int64  `json:"seq"`
-	ClientMsgID string `json:"client_msg_id,omitempty"`
-	MsgType     string `json:"msg_type"`
-	Content     string `json:"content"`
-	Ts          int64  `json:"ts"`
+	ClientMsgID string                `json:"client_msg_id,omitempty"`
+	Input       []models.MessageInput `json:"input"`
+	Ts          int64                 `json:"ts"`
 }
 
 type WSBadgePush struct {
@@ -41,14 +40,10 @@ type WSNotificationPush struct {
 }
 
 func MessageFrame(evt MessageSendEvent) WSMessagePush {
-	msgType := evt.MsgType
-	if msgType == "" {
-		msgType = models.MsgTypeText
-	}
 	return WSMessagePush{
 		Type: "message", MsgID: evt.MsgID, ConvID: evt.ConvID, ConvType: evt.ConvType,
 		SenderID: evt.SenderID, Seq: evt.Seq, ClientMsgID: evt.ClientMsgID,
-		MsgType: msgType, Content: evt.Content, Ts: evt.Ts,
+		Input: evt.Input, Ts: evt.Ts,
 	}
 }
 

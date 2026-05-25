@@ -1,10 +1,6 @@
 package events
 
-import (
-	"strings"
-
-	"im/pkg/models"
-)
+import "im/pkg/models"
 
 // RocketMQ Topic：按主业务域拆分。
 const (
@@ -49,20 +45,6 @@ const ChatSubscribeAll = "c2c || group || custom || recall"
 const MsgTypeRecall = "recall"
 const MsgTypeCustom = "custom"
 
-// ChatTagForSend 按会话类型与消息类型选择 im_chat Tag。
-func ChatTagForSend(evt MessageSendEvent) string {
-	if evt.MsgType == MsgTypeRecall {
-		return TagChatRecall
-	}
-	if evt.MsgType == MsgTypeCustom || strings.HasPrefix(evt.MsgType, "custom_") {
-		return TagChatCustom
-	}
-	if evt.ConvType == models.ConvTypeGroup {
-		return TagChatGroup
-	}
-	return TagChatC2C
-}
-
 type MessageSendEvent struct {
 	MsgID        int64  `json:"msg_id"`
 	ConvID       string `json:"conv_id"`
@@ -74,10 +56,9 @@ type MessageSendEvent struct {
 	Seq          int64  `json:"seq"` // 与 biz_seq 相同，兼容消费方
 	SendTs       int64  `json:"send_ts"`
 	ServerRecvMs int64  `json:"server_recv_ms"`
-	ClientMsgID  string `json:"client_msg_id"`
-	MsgType      string `json:"msg_type"`
-	Content      string `json:"content"`
-	Ts           int64  `json:"ts"`
+	ClientMsgID  string                `json:"client_msg_id"`
+	Input        []models.MessageInput `json:"input"`
+	Ts           int64                 `json:"ts"`
 	RecipientIDs []int64 `json:"recipient_ids,omitempty"`
 }
 

@@ -1,11 +1,10 @@
 package svc
 
 import (
-	"context"
 	"log"
 
-	"im/pkg/repo"
 	"im/apps/user/rpc/internal/config"
+	"im/pkg/repo"
 )
 
 type ServiceContext struct {
@@ -14,12 +13,12 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	pool, err := repo.NewPool(context.Background(), c.Postgres.DSN)
+	db, err := repo.NewPool(c.MySQL.DSN)
 	if err != nil {
-		log.Fatalf("postgres: %v", err)
+		log.Fatalf("mysql: %v", err)
 	}
 	return &ServiceContext{
 		Config:   c,
-		UserRepo: repo.NewUserRepo(pool),
+		UserRepo: repo.NewUserRepo(db),
 	}
 }

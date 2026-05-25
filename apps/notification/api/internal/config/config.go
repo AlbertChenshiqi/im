@@ -8,5 +8,5 @@ type Config struct {
 		AccessSecret string
 		AccessExpire int64
 	}
-	Postgres struct{ DSN string }
+	MySQL struct{ DSN string }
 }

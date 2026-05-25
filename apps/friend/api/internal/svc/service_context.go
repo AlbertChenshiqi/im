@@ -1,7 +1,6 @@
 package svc
 
 import (
-	"context"
 
 	"github.com/zeromicro/go-zero/zrpc"
 
@@ -18,14 +17,14 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	pool := zerokit.MustPGPool(context.Background(), c.Postgres.DSN)
+	db := zerokit.MustMySQL(c.MySQL.DSN)
 	var conv conversation_client.Conversation
 	if len(c.ConversationRpc.Endpoints) > 0 {
 		conv = conversation_client.NewConversation(zrpc.MustNewClient(zrpc.RpcClientConf{Endpoints: c.ConversationRpc.Endpoints, NonBlock: true}))
 	}
 	return &ServiceContext{
 		Config:          c,
-		FriendRepo:      repo.NewFriendRepo(pool),
+		FriendRepo:      repo.NewFriendRepo(db),
 		ConversationRpc: conv,
 	}
 }

@@ -1,49 +1,24 @@
 package config
 
-import (
-	"os"
-	"strconv"
-)
+import "os"
 
-type Common struct {
-	PostgresDSN string
-	RedisAddr   string
-	RocketMQNameServer []string
-	JWTSecret   string
-	GRPCPort    int
-	HTTPPort    int
+type Env struct {
+	MySQLDSN  string
+	RedisAddr string
+	JWTSecret string
 }
 
-func LoadCommon() Common {
-	return Common{
-		PostgresDSN: getEnv("POSTGRES_DSN", "postgres://im:im@localhost:5432/im?sslmode=disable"),
-		RedisAddr:   getEnv("REDIS_ADDR", "localhost:6379"),
-		RocketMQNameServer: []string{getEnv("ROCKETMQ_NAMESERVER", "localhost:9876")},
-		JWTSecret:   getEnv("JWT_SECRET", "dev-secret-change-in-production"),
-		GRPCPort:    getEnvInt("GRPC_PORT", 50051),
-		HTTPPort:    getEnvInt("HTTP_PORT", 8080),
+func Load() Env {
+	return Env{
+		MySQLDSN:  getEnv("MYSQL_DSN", "im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local"),
+		RedisAddr: getEnv("REDIS_ADDR", "localhost:6379"),
+		JWTSecret: getEnv("JWT_SECRET", "im-dev-secret-change-in-production"),
 	}
 }
 
-func getEnv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
+func getEnv(k, def string) string {
+	if v := os.Getenv(k); v != "" {
 		return v
 	}
 	return def
-}
-
-func getEnvInt(key string, def int) int {
-	if v := os.Getenv(key); v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
-			return n
-		}
-	}
-	return def
-}
-
-func ServiceAddr(name string, port int) string {
-	if v := os.Getenv(name + "_ADDR"); v != "" {
-		return v
-	}
-	return "localhost:" + strconv.Itoa(port)
 }

@@ -2,7 +2,7 @@ package svcconfig
 
 import "github.com/zeromicro/go-zero/zrpc"
 
-type PostgresConf struct {
+type MySQLConf struct {
 	DSN string
 }
 
