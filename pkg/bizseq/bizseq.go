@@ -11,7 +11,7 @@ import (
 const (
 	// SlotDivisorMs 时间分片粒度（200ms 一片）。
 	SlotDivisorMs  = 500
-	SlotOffsetBits = 16
+	SlotOffsetBits = 18
 	maxSlotOffset  = (1 << SlotOffsetBits) - 1
 	slotKeyTTL     = time.Minute
 )
@@ -36,7 +36,7 @@ func Compose(slot, slotOffset int64) (int64, error) {
 
 // ComposeFromRecvMs 用 serverRecvMs（毫秒）高位与 offset 位运算合成 bizSeq（无 Redis）。
 func ComposeFromRecvMs(serverRecvMs, slotOffset int64) (int64, error) {
-	return Compose(serverRecvMs, slotOffset)
+	return Compose(TimeSlot(serverRecvMs), slotOffset)
 }
 
 // Allocate 在同一时间片内 INCR 得到偏移并合成 bizSeq。
@@ -50,5 +50,5 @@ func Allocate(ctx context.Context, rdb *redis.Client, sessionID string, serverRe
 	if offset == 1 {
 		_ = rdb.Expire(ctx, key, slotKeyTTL).Err()
 	}
-	return Compose(serverRecvMs, offset)
+	return Compose(TimeSlot(serverRecvMs), offset)
 }

@@ -1,6 +1,9 @@
 package bizseq
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestCompose(t *testing.T) {
 	seq, err := Compose(100, 42)
@@ -22,10 +25,11 @@ func TestTimeSlot(t *testing.T) {
 }
 
 func TestComposeFromRecvMs(t *testing.T) {
-	seq, err := ComposeFromRecvMs(400, 0)
+	seq, err := ComposeFromRecvMs(100779697961507, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Printf("seq=%d\n", seq)
 	want := int64((400 << SlotOffsetBits) | 0)
 	if seq != want {
 		t.Fatalf("got %d want %d", seq, want)
