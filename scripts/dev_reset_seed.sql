@@ -17,10 +17,10 @@ TRUNCATE TABLE users;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
-INSERT INTO users (id, username, password_hash, nickname) VALUES
-    (1, 'dev_1', '', 'Dev 1'),
-    (2, 'dev_2', '', 'Dev 2'),
-    (3, 'dev_3', '', 'Dev 3');
+INSERT INTO users (id, username, password_hash, nickname, avatar_url) VALUES
+    (1, 'dev_1', '', 'Dev 1', ''),
+    (2, 'dev_2', '', 'Dev 2', ''),
+    (3, 'dev_3', '', 'Dev 3', '');
 
 INSERT INTO friendships (user_id, friend_id) VALUES (1, 2), (2, 1);
 

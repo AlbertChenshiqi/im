@@ -20,8 +20,8 @@ func NewUserRepo(db *sql.DB) *UserRepo {
 
 func (r *UserRepo) CreateUser(ctx context.Context, username, hash, nickname string) (*models.User, error) {
 	res, err := r.db.ExecContext(ctx,
-		`INSERT INTO users (username, password_hash, nickname) VALUES (?,?,?)`,
-		username, hash, nickname,
+		`INSERT INTO users (username, password_hash, nickname, avatar_url) VALUES (?,?,?,?)`,
+		username, hash, nickname, "",
 	)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (r *UserRepo) EnsureDevUser(ctx context.Context, id int64) (*models.User, e
 	username := fmt.Sprintf("dev_%d", id)
 	nickname := fmt.Sprintf("Dev %d", id)
 	_, err = r.db.ExecContext(ctx,
-		`INSERT INTO users (id, username, password_hash, nickname) VALUES (?,?,'',?)
+		`INSERT INTO users (id, username, password_hash, nickname, avatar_url) VALUES (?,?,'',?,'')
 		 ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP(3)`,
 		id, username, nickname,
 	)

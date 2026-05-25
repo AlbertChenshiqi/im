@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     username      VARCHAR(64) NOT NULL COMMENT '登录名，全局唯一',
     password_hash TEXT NOT NULL COMMENT '密码哈希',
     nickname      VARCHAR(128) NOT NULL DEFAULT '' COMMENT '昵称',
-    avatar_url    TEXT NOT NULL COMMENT '头像 URL',
+    avatar_url    TEXT NOT NULL DEFAULT '' COMMENT '头像 URL',
     created_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     updated_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
     UNIQUE KEY uk_users_username (username)
