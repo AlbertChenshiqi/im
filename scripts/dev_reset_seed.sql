@@ -1,8 +1,6 @@
 -- 清空业务表并写入本地开发测试数据（conv_id: group_* / c2c_*）
 -- 用法: mysql -uim -pim im < scripts/dev_reset_seed.sql
 
-SET FOREIGN_KEY_CHECKS = 0;
-
 TRUNCATE TABLE messages;
 TRUNCATE TABLE conversation_meta;
 TRUNCATE TABLE conversation_members;
@@ -14,8 +12,6 @@ TRUNCATE TABLE friendships;
 TRUNCATE TABLE friend_requests;
 TRUNCATE TABLE user_devices;
 TRUNCATE TABLE users;
-
-SET FOREIGN_KEY_CHECKS = 1;
 
 INSERT INTO users (id, username, password_hash, nickname, avatar_url) VALUES
     (1, 'dev_1', '', 'Dev 1', ''),

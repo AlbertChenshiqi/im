@@ -1,4 +1,5 @@
 -- MySQL 8+ 初始化（utf8mb4）
+-- 约定：不使用外键，引用完整性由应用层保证。
 
 SET NAMES utf8mb4;
 
@@ -20,7 +21,7 @@ CREATE TABLE IF NOT EXISTS user_devices (
     platform    VARCHAR(32) NOT NULL DEFAULT 'unknown' COMMENT '平台',
     updated_at  DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
     PRIMARY KEY (user_id, device_id),
-    CONSTRAINT fk_user_devices_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    KEY idx_user_devices_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS friend_requests (
@@ -30,8 +31,7 @@ CREATE TABLE IF NOT EXISTS friend_requests (
     status        VARCHAR(16) NOT NULL DEFAULT 'pending',
     created_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     UNIQUE KEY uk_friend_req_pair (from_user_id, to_user_id),
-    CONSTRAINT fk_friend_req_from FOREIGN KEY (from_user_id) REFERENCES users(id),
-    CONSTRAINT fk_friend_req_to FOREIGN KEY (to_user_id) REFERENCES users(id)
+    KEY idx_friend_req_to (to_user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS friendships (
@@ -39,8 +39,7 @@ CREATE TABLE IF NOT EXISTS friendships (
     friend_id   BIGINT NOT NULL,
     created_at  DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     PRIMARY KEY (user_id, friend_id),
-    CONSTRAINT fk_friendships_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_friendships_friend FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE
+    KEY idx_friendships_friend (friend_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `groups` (
@@ -51,7 +50,7 @@ CREATE TABLE IF NOT EXISTS `groups` (
     notice        TEXT NOT NULL,
     created_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     updated_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-    CONSTRAINT fk_groups_owner FOREIGN KEY (owner_id) REFERENCES users(id)
+    KEY idx_groups_owner (owner_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS group_members (
@@ -61,9 +60,7 @@ CREATE TABLE IF NOT EXISTS group_members (
     muted       TINYINT(1) NOT NULL DEFAULT 0,
     joined_at   DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     PRIMARY KEY (group_id, user_id),
-    KEY idx_group_members_user (user_id),
-    CONSTRAINT fk_group_members_group FOREIGN KEY (group_id) REFERENCES `groups`(id) ON DELETE CASCADE,
-    CONSTRAINT fk_group_members_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    KEY idx_group_members_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS conversations (
@@ -71,7 +68,7 @@ CREATE TABLE IF NOT EXISTS conversations (
     type        VARCHAR(16) NOT NULL,
     group_id    BIGINT NULL,
     created_at  DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    CONSTRAINT fk_conversations_group FOREIGN KEY (group_id) REFERENCES `groups`(id)
+    KEY idx_conversations_group (group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS conversation_members (
@@ -82,8 +79,7 @@ CREATE TABLE IF NOT EXISTS conversation_members (
     last_read_seq   BIGINT NOT NULL DEFAULT 0,
     updated_at      DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
     PRIMARY KEY (conv_id, user_id),
-    CONSTRAINT fk_conv_members_conv FOREIGN KEY (conv_id) REFERENCES conversations(id) ON DELETE CASCADE,
-    CONSTRAINT fk_conv_members_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    KEY idx_conv_members_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS conversation_meta (
@@ -91,8 +87,7 @@ CREATE TABLE IF NOT EXISTS conversation_meta (
     last_seq      BIGINT NOT NULL DEFAULT 0,
     last_msg_id   BIGINT NOT NULL DEFAULT 0,
     last_preview  TEXT NOT NULL,
-    updated_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-    CONSTRAINT fk_conv_meta_conv FOREIGN KEY (conv_id) REFERENCES conversations(id) ON DELETE CASCADE
+    updated_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -104,7 +99,8 @@ CREATE TABLE IF NOT EXISTS messages (
     input         JSON NOT NULL COMMENT '消息体 {"input":[{"msgType","content"}]}',
     created_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     UNIQUE KEY uk_messages_conv_seq (conv_id, seq),
-    KEY idx_messages_conv_seq (conv_id, seq DESC)
+    KEY idx_messages_conv_seq (conv_id, seq DESC),
+    KEY idx_messages_sender (sender_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS notifications (
@@ -115,6 +111,5 @@ CREATE TABLE IF NOT EXISTS notifications (
     category    VARCHAR(64) NOT NULL DEFAULT 'system',
     is_read     TINYINT(1) NOT NULL DEFAULT 0,
     created_at  DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    KEY idx_notifications_user (user_id, created_at DESC),
-    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    KEY idx_notifications_user (user_id, created_at DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

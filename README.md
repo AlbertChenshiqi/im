@@ -310,7 +310,7 @@ flowchart LR
 
 ### 3.4 MySQL 核心表
 
-见 [`migrations/001_init.sql`](migrations/001_init.sql)：`users`、`friendships`、`groups`、`group_members`、`conversations`、`messages`、`notifications` 等。
+见 [`migrations/001_init.sql`](migrations/001_init.sql)：`users`、`friendships`、`groups`、`group_members`、`conversations`、`messages`、`notifications` 等。**不使用外键**，引用关系由应用层维护；已有库若带外键可执行 [`migrations/003_drop_foreign_keys.sql`](migrations/003_drop_foreign_keys.sql)。
 
 **`messages` 表**：仅存 **`input` JSON 列**（形如 `{"input":[{"msgType":"text","content":"..."}]}`），无 `msg_type` / `content` 列。从旧库升级执行 [`migrations/004_messages_drop_msg_type_content.sql`](migrations/004_messages_drop_msg_type_content.sql)。
 
