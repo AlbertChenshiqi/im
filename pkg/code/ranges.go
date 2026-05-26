@@ -9,8 +9,8 @@ package code
 //	10400–10499  conversation
 //	10500–10599  message
 //	10600–10699  notification
-//	10700–10799  push
-//	10800–10899  cron
+//	10700–10799  预留
+//	10800–10899  transfer
 //	1–999        common（跨服务通用）
 const (
 	RangeCommonMin = 1
@@ -37,11 +37,11 @@ const (
 	RangeNotificationMin = 10600
 	RangeNotificationMax = 10699
 
-	RangePushMin = 10700
-	RangePushMax = 10799
+	RangeReserved107Min = 10700
+	RangeReserved107Max = 10799
 
-	RangeCronMin = 10800
-	RangeCronMax = 10899
+	RangeTransferMin = 10800
+	RangeTransferMax = 10899
 )
 
 // Segment 返回码所在分段名称
@@ -62,10 +62,10 @@ func Segment(c Code) string {
 		return "message"
 	case n >= RangeNotificationMin && n <= RangeNotificationMax:
 		return "notification"
-	case n >= RangePushMin && n <= RangePushMax:
-		return "push"
-	case n >= RangeCronMin && n <= RangeCronMax:
-		return "cron"
+	case n >= RangeReserved107Min && n <= RangeReserved107Max:
+		return "reserved"
+	case n >= RangeTransferMin && n <= RangeTransferMax:
+		return "transfer"
 	case n >= RangeCommonMin && n <= RangeCommonMax:
 		return "common"
 	default:

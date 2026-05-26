@@ -3,7 +3,7 @@
 #
 # 用法：
 #   ./scripts/k8s-deploy.sh message-rpc
-#   ./scripts/k8s-deploy.sh gateway-api:2 message-rpc:1 cron
+#   ./scripts/k8s-deploy.sh gateway-api:2 message-rpc:1 transfer
 #   make deploy SVC=gateway-api:2,message-rpc
 #
 # 环境变量：
@@ -33,7 +33,7 @@ usage() {
 示例:
   $0 message-rpc
   $0 gateway-api:2 message-rpc:1
-  make deploy SVC=gateway-api:2,cron
+  make deploy SVC=gateway-api:2,transfer
 
 可用服务:
 $(im_list_bins | sed 's/^/  /')

@@ -28,9 +28,7 @@ build:
 	go build -o bin/message-rpc ./apps/message/rpc
 	go build -o bin/notification-api ./apps/notification/api
 	go build -o bin/notification-rpc ./apps/notification/rpc
-	go build -o bin/push-api ./apps/push/api
-	go build -o bin/push-rpc ./apps/push/rpc
-	go build -o bin/cron ./apps/cron
+	go build -o bin/transfer ./apps/transfer
 
 image-base-build:
 	chmod +x scripts/image-base-build.sh
@@ -38,7 +36,7 @@ image-base-build:
 
 # 增量部署（推荐）：构建 → 载入 kind → 调副本（可选）→ 滚动发布
 #   make deploy SVC=message-rpc
-#   make deploy SVC=gateway-api:2,message-rpc,cron
+#   make deploy SVC=gateway-api:2,message-rpc,transfer
 #   make deploy SVC=gateway-api,message-rpc REPLICAS=1
 deploy:
 	chmod +x scripts/k8s-deploy.sh scripts/build-images.sh scripts/k8s-load-images.sh

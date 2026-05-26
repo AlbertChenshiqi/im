@@ -66,7 +66,6 @@ write_api group 10300
 write_api conversation 10400
 write_api message 10500
 write_api notification 10600
-write_api push 10700
 
 write_user_rpc
 write_rpc friend 20200
@@ -74,11 +73,11 @@ write_rpc group 20300
 write_rpc conversation 20400
 write_rpc message 20500
 write_rpc notification 20600
-write_rpc push 20700
 
-cat >> "$ROOT/apps/push/rpc/etc/push.yaml" <<EOF
-RedisStore:
+cat >> "$ROOT/apps/user/api/etc/user-api.yaml" <<EOF
+Redis:
   Addr: localhost:6379
+OnlineTTLSeconds: 300
 EOF
 
 # message-api 仅查询历史，发消息走 Gateway WebSocket
@@ -113,13 +112,8 @@ Conversation:
   DirectRecentDays: 0
 EOF
 
-cat >> "$ROOT/apps/push/api/etc/push-api.yaml" <<EOF
-Redis:
-  Addr: localhost:6379
-EOF
-
-cat > "$ROOT/apps/cron/etc/cron.yaml" <<EOF
-Name: cron
+cat > "$ROOT/apps/transfer/etc/transfer.yaml" <<EOF
+Name: transfer
 HealthPort: 10800
 MySQL:
   DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
@@ -128,7 +122,7 @@ Redis:
 RocketMQ:
   NameServer:
     - localhost:9876
-Cron:
+Transfer:
   InboxMergeMs: 100
   OfflineMergeSec: 10
   MemberBatch: 500

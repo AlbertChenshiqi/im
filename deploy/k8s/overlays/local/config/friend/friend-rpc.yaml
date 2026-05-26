@@ -1,7 +1,7 @@
 Name: friend.rpc
 ListenOn: 0.0.0.0:20200
 MySQL:
-  DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
+  DSN: im:im@tcp(mysql:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 Log:
   ServiceName: friend-rpc
   Mode: console

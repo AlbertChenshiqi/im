@@ -1,0 +1,17 @@
+Name: transfer
+HealthPort: 10800
+
+MySQL:
+  DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
+
+Redis:
+  Addr: localhost:6379
+
+RocketMQ:
+  NameServer:
+    - localhost:9876
+
+Transfer:
+  InboxMergeMs: 100
+  OfflineMergeSec: 10
+  MemberBatch: 500

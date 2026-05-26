@@ -4,12 +4,14 @@ import (
 	"log"
 
 	"im/apps/user/api/internal/config"
+	"im/pkg/redisclient"
 	"im/pkg/repo"
 )
 
 type ServiceContext struct {
 	Config   config.Config
 	UserRepo *repo.UserRepo
+	Redis    *redisclient.Client
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -20,5 +22,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	return &ServiceContext{
 		Config:   c,
 		UserRepo: repo.NewUserRepo(db),
+		Redis:    redisclient.New(c.Redis.Addr),
 	}
 }

@@ -5,14 +5,13 @@
 | 目录 | 端口 | 说明 |
 |------|------|------|
 | [gateway/api](gateway/api) | 10000 | WebSocket 网关 + 订阅 `im_sync` / `gateway_push` |
-| [user](user) | API 10100 / RPC 20100 | 用户 |
+| [user](user) | API 10100 / RPC 20100 | 用户（含 HTTP 在线心跳 `POST /user/v1/online`） |
 | [friend](friend) | 10200 / 20200 | 好友 |
 | [group](group) | 10300 / 20300 | 群组 |
 | [conversation](conversation) | 10400 / 20400 | 会话 |
 | [message](message) | 10500 / 20500 | 消息（API 查历史；发送走 Gateway WS → RPC） |
 | [notification](notification) | 10600 / 20600 | 系统通知 |
-| [push](push) | 10700 / 20700 | 在线心跳（可选） |
-| **[cron](cron)** | **10800** | **RocketMQ 异步任务** |
+| **[transfer](transfer)** | **10800** | **RocketMQ 异步任务** |
 
 ## RocketMQ Topic
 
@@ -25,11 +24,11 @@
 ## 实时推送数据流
 
 ```
-im_chat (c2c|group) → cron(realtime) → [在线] → im_sync/gateway_push → gateway WS
-                     → cron(inbox)   → im_sync/read → push-dispatch → 在线 badge / im_push/offline_message
+im_chat (c2c|group) → transfer(realtime) → [在线] → im_sync/gateway_push → gateway WS
+                     → transfer(inbox)   → im_sync/read → push-dispatch → 在线 badge / im_push/offline_message
 ```
 
-## cron 任务
+## transfer 任务
 
 | 任务 | Topic | Tag 订阅 | 说明 |
 |------|-------|----------|------|
@@ -40,5 +39,5 @@ im_chat (c2c|group) → cron(realtime) → [在线] → im_sync/gateway_push →
 | offline-push | `im_push` | `offline_message` | APNs/FCM |
 | push-notification | `im_push` | `system_announce` | 系统公告 |
 
-启动：`./bin/cron -f apps/cron/etc/cron.yaml`  
+启动：`./bin/transfer -f apps/transfer/etc/transfer.yaml`  
 Gateway：`./bin/gateway-api -f apps/gateway/api/etc/gateway-api.yaml`

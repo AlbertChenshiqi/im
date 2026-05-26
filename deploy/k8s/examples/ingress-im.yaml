@@ -66,13 +66,6 @@ spec:
                 name: notification-api
                 port:
                   number: 10600
-          - path: /push/v1
-            pathType: Prefix
-            backend:
-              service:
-                name: push-api
-                port:
-                  number: 10700
           - path: /gateway/v1
             pathType: Prefix
             backend:

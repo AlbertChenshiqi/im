@@ -19,15 +19,13 @@ SERVICES=(
   "api|im/conversation/conversation-api|conversation-api|10400|30400|conversation|conversation-api.yaml|"
   "api|im/message/message-api|message-api|10500|30500|message|message-api.yaml|"
   "api|im/notification/notification-api|notification-api|10600|30600|notification|notification-api.yaml|"
-  "api|im/push/push-api|push-api|10700|30700|push|push-api.yaml|"
   "rpc|im/user/user-rpc|user-rpc|20100||user|user-rpc.yaml|"
   "rpc|im/friend/friend-rpc|friend-rpc|20200||friend|friend-rpc.yaml|"
   "rpc|im/group/group-rpc|group-rpc|20300||group|group-rpc.yaml|"
   "rpc|im/conversation/conversation-rpc|conversation-rpc|20400||conversation|conversation-rpc.yaml|"
   "rpc|im/message/message-rpc|message-rpc|20500||message|message-rpc.yaml|"
   "rpc|im/notification/notification-rpc|notification-rpc|20600||notification|notification-rpc.yaml|"
-  "rpc|im/push/push-rpc|push-rpc|20700||push|push-rpc.yaml|"
-  "api|im/cron/cron|cron|10800|30800|cron|cron.yaml|/health"
+  "api|im/transfer/transfer|transfer|10800|30800|transfer|transfer.yaml|/health"
 )
 
 module_dir() {
@@ -36,7 +34,7 @@ module_dir() {
 
 write_module_kustomizations() {
   local module dir
-  for module in gateway user friend group conversation message notification push cron; do
+  for module in gateway user friend group conversation message notification transfer; do
     dir=$(module_dir "$module")
     [[ -d "$dir" ]] || continue
     {

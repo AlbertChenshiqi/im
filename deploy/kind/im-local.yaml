@@ -28,9 +28,6 @@ nodes:
       - containerPort: 30600
         hostPort: 10600
         protocol: TCP
-      - containerPort: 30700
-        hostPort: 10700
-        protocol: TCP
       - containerPort: 30800
         hostPort: 10800
         protocol: TCP

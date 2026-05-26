@@ -18,8 +18,7 @@ im/
 │   ├── conversation/        # 10400 / 20400
 │   ├── message/             # 10500 / 20500
 │   ├── notification/        # 10600 / 20600
-│   ├── push/                # 10700 / 20700
-│   └── cron/                # 10800  RocketMQ 异步任务（无 RPC）
+│   └── transfer/            # 10800  RocketMQ 异步任务（无 RPC）
 ├── pkg/                     # events、rocketmq、redis、repo、msgcore
 ├── migrations/              # MySQL 初始化（001 建表；004 旧库迁 input）
 ├── docs/                    # 前端对接文档 frontend-integration.md
@@ -38,8 +37,8 @@ im/
 |------|------|
 | 前后端分离接入 | 前端 **REST 直连各域 API** 做查询/管理；**发消息仅 WebSocket** |
 | Gateway 实时通道 | **:10000** WebSocket：握手 JWT 鉴权、心跳、发消息；**订阅 Tag `gateway_push` 下行** |
-| 服务间走 RPC | Gateway、Message 等通过 **zrpc** 调各域 **RPC**（20100–20700） |
-| 写路径异步 | 发消息写 `im_chat`（按单聊/群聊等 Tag）；落库、未读、推送由 **cron** 跨 Topic 消费 |
+| 服务间走 RPC | Gateway、Message 等通过 **zrpc** 调各域 **RPC**（20100–20600） |
+| 写路径异步 | 发消息写 `im_chat`（按单聊/群聊等 Tag）；落库、未读、推送由 **transfer** 跨 Topic 消费 |
 | 在线判定 | Redis `online:{uid}`（WS 鉴权写入）；在线下行走 `im_sync` / `gateway_push` |
 | 万人群防风暴 | 未读 **Redis 批处理 + `im_sync` / `read` 合并**；实时消息推 **在线** 群成员（`online:{uid}`） |
 
@@ -48,16 +47,15 @@ im/
 | 模块 | API（前端） | RPC（内部） | 职责 |
 |------|-------------|-------------|------|
 | gateway | **10000** | — | WebSocket `/gateway/v1/ws` + RocketMQ 广播消费下行 |
-| user | 10100 | 20100 | 注册登录、资料、设备 Token |
+| user | 10100 | 20100 | 注册登录、资料、设备 Token、HTTP 在线心跳 |
 | friend | 10200 | 20200 | 好友、接受好友建单聊 |
 | group | 10300 | 20300 | 群 CRUD、成员、`IsMember` |
 | conversation | 10400 | 20400 | 会话列表、已读、`EnsureDirect` |
 | message | 10500 | 20500 | **仅查询**历史；发消息走 Gateway WS → RPC |
 | notification | 10600 | 20600 | 系统通知 |
-| push | 10700 | 20700 | 在线心跳（可选；Gateway WS 握手已写 `online:{uid}`） |
-| **cron** | **10800**（`/health`） | — | RocketMQ 异步任务（见 [`apps/cron`](apps/cron)） |
+| **transfer** | **10800**（`/health`） | — | RocketMQ 异步任务（见 [`apps/transfer`](apps/transfer)） |
 
-规则：**API `10XYZ` ↔ RPC `20XYZ`**；**cron** 无 RPC，仅健康检查端口 `10800`。
+规则：**API `10XYZ` ↔ RPC `20XYZ`**；**transfer** 无 RPC，仅健康检查端口 `10800`。
 
 ### 1.3 服务架构图
 
@@ -78,7 +76,6 @@ flowchart TB
     CAPI[conversation :10400]
     MAPI[message :10500]
     NAPI[notification :10600]
-    PAPI[push :10700]
   end
 
   subgraph rpc_layer [RPC 层 内部 zrpc]
@@ -86,10 +83,9 @@ flowchart TB
     GRPC[group :20300]
     CRPC[conversation :20400]
     MRPC[message :20500]
-    PRPC[push :20700]
   end
 
-  subgraph cron_svc [apps/cron :10800]
+  subgraph transfer_svc [apps/transfer :10800]
     Persist[message-persist]
     Inbox[inbox-unread]
     Realtime[realtime-message]
@@ -112,11 +108,11 @@ flowchart TB
   GW -->|consume tag gateway_push| RMQ
   MAPI -->|zrpc| GRPC
   MRPC --> RMQ
-  RMQ --> cron_svc
-  cron_svc -->|online push| RMQ
+  RMQ --> transfer_svc
+  transfer_svc -->|online push| RMQ
   RMQ --> GW
-  cron_svc --> MySQL
-  cron_svc --> Redis
+  transfer_svc --> MySQL
+  transfer_svc --> Redis
   GW --> Redis
   MRPC --> RMQ
   Persist --> MySQL
@@ -189,21 +185,21 @@ sequenceDiagram
   participant Chat as im_chat
   participant Sync as im_sync
   participant Push as im_push
-  participant Cron as apps/cron
+  participant Transfer as apps/transfer
   participant Redis as Redis
   participant GW as gateway WS
   participant C as Client
 
   MRPC->>Chat: c2c / group
-  Cron->>Chat: persist + inbox + realtime
-  Cron->>Sync: read（未读合并）
-  Cron->>Redis: IsOnline + group_members
+  Transfer->>Chat: persist + inbox + realtime
+  Transfer->>Sync: read（未读合并）
+  Transfer->>Redis: IsOnline + group_members
   alt 在线
-    Cron->>Sync: gateway_push
+    Transfer->>Sync: gateway_push
     Sync->>GW: 广播消费
     GW-->>C: WS message / badge
   else 离线
-    Cron->>Push: offline_message
+    Transfer->>Push: offline_message
   end
 ```
 
@@ -221,7 +217,7 @@ flowchart LR
   end
 
   subgraph async [写路径 异步]
-    A3 --> B0[apps/cron]
+    A3 --> B0[apps/transfer]
     B0 --> B1[message-persist]
     B0 --> B2[inbox-unread]
     B0 --> B2b[realtime-message]
@@ -276,7 +272,7 @@ flowchart LR
 | `group` | 群聊消息 | message/rpc | 同上 |
 | `custom` | `input` 中含 `msgType=custom` 或 `custom_*` | message/rpc | 同上 |
 | `recall` | 撤回（`input` 中含 `msgType=recall`，预留） | message/rpc | 同上（预留） |
-| `persisted` | 落库完成 | cron/message-persist（落库后可选广播） | （审计/搜索扩展） |
+| `persisted` | 落库完成 | transfer/message-persist（落库后可选广播） | （审计/搜索扩展） |
 
 消费订阅表达式：`c2c || group || custom || recall`（**不含落库**，落库见 `im_chat_persist`）
 
@@ -297,8 +293,8 @@ flowchart LR
 
 | Tag | 说明 | 生产者 | 消费者（Group） |
 |-----|------|--------|-----------------|
-| `read` | 已读/未读增量（原 inbox.updated） | cron/inbox-unread | push-dispatch |
-| `gateway_push` | 在线实时下行（message/badge/notification） | cron（在线路径） | gateway（**广播**） |
+| `read` | 已读/未读增量（原 inbox.updated） | transfer/inbox-unread | push-dispatch |
+| `gateway_push` | 在线实时下行（message/badge/notification） | transfer（在线路径） | gateway（**广播**） |
 | `online` | 上下线 | （预留） | （预留） |
 | `friend` | 好友变更 | （预留） | （预留） |
 | `group_member` | 群成员变更 | （预留） | （预留） |
@@ -379,8 +375,7 @@ kind 集群已将 MySQL / Redis / RocketMQ NameServer **NodePort 映射到本机
 | Gateway | `ws://localhost:10000/gateway/v1/ws` |
 | User API | `http://localhost:10100` |
 | Message API | `http://localhost:10500` |
-| Push API | `http://localhost:10700` |
-| Cron（健康检查） | `http://localhost:10800/health` |
+| Transfer（健康检查） | `http://localhost:10800/health` |
 
 ```bash
 curl http://localhost:10000/gateway/v1/health
@@ -400,7 +395,6 @@ WebSocket：`ws://<gateway-host>/gateway/v1/ws`。
 | conversation | `/conversation/v1` |
 | message | `/message/v1` |
 | notification | `/notification/v1` |
-| push | `/push/v1` |
 | gateway | `/gateway/v1`（含 `/ws`、`/health`） |
 
 **开发鉴权（推荐，需 `Auth.DevMode: true`）**
@@ -549,7 +543,7 @@ ws://localhost:10000/gateway/v1/ws?token=<JWT>
 
 ### 4.6 WebSocket 服务端推送（下行）
 
-cron 判断用户在线后写入 `im.gateway.push`，Gateway 消费并推送到对应 WebSocket 连接。
+transfer 判断用户在线后写入 `im.gateway.push`，Gateway 消费并推送到对应 WebSocket 连接。
 
 | type | 说明 | 示例字段 |
 |------|------|----------|
@@ -634,7 +628,7 @@ make gen    # 根据 apps/*/*.api 与 *.proto 生成骨架
 
 | 本系统组件 | 阿里云产品 | 用途 |
 |------------|------------|------|
-| K8s 部署全部 `apps/*`（含 `cron`） | **ACK**（容器服务 Kubernetes） | 微服务编排、HPA |
+| K8s 部署全部 `apps/*`（含 `transfer`） | **ACK**（容器服务 Kubernetes） | 微服务编排、HPA |
 | 或裸机部署 | **ECS** + **SLB** | 替代 ACK 的轻量方案 |
 | MySQL | **RDS MySQL** 高可用版 | 用户/群/会话元数据 |
 | 消息表海量扩展 | **RDS 分库** 或 **Tablestore** / **Lindorm** | 消息历史（千万级以上建议独立） |
@@ -670,7 +664,7 @@ make gen    # 根据 apps/*/*.api 与 *.proto 生成骨架
 | RDS MySQL | 4C16G 高可用 + 200G SSD | 1,200–2,000 |
 | Tair Redis | 4G 集群（主从） | 600–1,200 |
 | 消息队列 RocketMQ | 标准版 | 2,000–4,000 |
-| **cron + gateway** | ACK Deployment 各 2C4G ×2 | 含在 ACK 节点内 |
+| **transfer + gateway** | ACK Deployment 各 2C4G ×2 | 含在 ACK 节点内 |
 | ALB + WAF 基础 | 按量 + 基础防护（含 WS） | 500–1,500 |
 | OSS + CDN | 500G 存储 + 流量 | 200–800 |
 | ARMS + SLS | 按量 | 300–800 |
@@ -695,7 +689,7 @@ make gen    # 根据 apps/*/*.api 与 *.proto 生成骨架
 ### 5.3 费用优化建议
 
 1. **RocketMQ 与 inbox 消费**是万人群主要成本驱动；合理设置 `INBOX_MERGE_MS`、离线合并，减少 `inbox_updated` 条数。
-2. **实时推送走 WebSocket**，cron 仅对 `IsOnline` 用户发布 `gateway_push`，离线才走 APNs/FCM。
+2. **实时推送走 WebSocket**，transfer 仅对 `IsOnline` 用户发布 `gateway_push`，离线才走 APNs/FCM。
 3. 消息表与元数据 **分库**：RDS 扛关系，海量消息用 Tablestore/OSS 冷存更省。
 4. 使用 **预留实例 / 节省计划** 可降低 ECS、RDS、RocketMQ 约 30%–50%。
 5. 非生产环境使用 **按量 + 夜间缩容**（ACK HPA min=0 需谨慎用于 RPC）。
@@ -710,7 +704,7 @@ flowchart TB
       GW[gateway Deployment]
       APIs[user message group ... APIs]
       RPCs[user message group ... RPCs]
-      CronDep[cron Deployment]
+      TransferDep[transfer Deployment]
     end
     RDS[(RDS MySQL)]
     Tair[(Tair Redis)]
@@ -725,8 +719,8 @@ flowchart TB
   RPCs --> RDS
   RPCs --> Tair
   RPCs --> RMQCloud
-  CronDep --> RMQCloud
-  CronDep --> Tair
+  TransferDep --> RMQCloud
+  TransferDep --> Tair
   GW --> RMQCloud
   GW --> Tair
   APIs --> OSS

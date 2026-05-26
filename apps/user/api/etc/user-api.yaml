@@ -7,3 +7,6 @@ Auth:
   DevMode: true
 MySQL:
   DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
+Redis:
+  Addr: localhost:6379
+OnlineTTLSeconds: 300

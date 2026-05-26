@@ -33,8 +33,7 @@ deploy/k8s/overlays/local/
     ├── conversation/
     ├── message/
     ├── notification/
-    ├── push/
-    └── cron/
+    └── transfer/
 ```
 
 ## 本地开发（kind）

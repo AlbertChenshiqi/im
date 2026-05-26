@@ -11,7 +11,7 @@ data:
     Name: conversation.rpc
     ListenOn: 0.0.0.0:20400
     MySQL:
-      DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
+      DSN: im:im@tcp(mysql:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
     Log:
       ServiceName: conversation-rpc
       Mode: console

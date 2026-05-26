@@ -14,9 +14,7 @@ IM_SERVICE_BUILD_SPECS=(
   "im/message/message-rpc:./apps/message/rpc:message-rpc"
   "im/notification/notification-api:./apps/notification/api:notification-api"
   "im/notification/notification-rpc:./apps/notification/rpc:notification-rpc"
-  "im/push/push-api:./apps/push/api:push-api"
-  "im/push/push-rpc:./apps/push/rpc:push-rpc"
-  "im/cron/cron:./apps/cron:cron"
+  "im/transfer/transfer:./apps/transfer:transfer"
 )
 
 im_list_bins() {

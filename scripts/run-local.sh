@@ -29,8 +29,6 @@ run group-rpc group-rpc apps/group/rpc/etc/group.yaml 20300
 run conversation-rpc conversation-rpc apps/conversation/rpc/etc/conversation.yaml 20400
 run message-rpc message-rpc apps/message/rpc/etc/message.yaml 20500
 run notification-rpc notification-rpc apps/notification/rpc/etc/notification.yaml 20600
-run push-rpc push-rpc apps/push/rpc/etc/push.yaml 20700
-
 sleep 2
 
 run gateway gateway-api apps/gateway/api/etc/gateway-api.yaml 10000
@@ -40,9 +38,7 @@ run group-api group-api apps/group/api/etc/group-api.yaml 10300
 run conversation-api conversation-api apps/conversation/api/etc/conversation-api.yaml 10400
 run message-api message-api apps/message/api/etc/message-api.yaml 10500
 run notification-api notification-api apps/notification/api/etc/notification-api.yaml 10600
-run push-api push-api apps/push/api/etc/push-api.yaml 10700
-
-run cron cron apps/cron/etc/cron.yaml 10800
+run transfer transfer apps/transfer/etc/transfer.yaml 10800
 
 echo "All services started."
 echo "Gateway WS: ws://localhost:10000/gateway/v1/ws"

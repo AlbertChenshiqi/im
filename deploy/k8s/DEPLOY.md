@@ -24,9 +24,9 @@
 | 层级 | 组件 | 说明 |
 |------|------|------|
 | 接入 | `gateway-api` | WebSocket `:10000`，多副本 + 会话保持 |
-| API | `*-api` | 前端 REST `10100–10700` |
-| RPC | `*-rpc` | 集群内 `20100–20700`，**不对外暴露** |
-| 异步 | `cron` | 健康检查 `:10800`，消费 RocketMQ |
+| API | `*-api` | 前端 REST `10100–10600` |
+| RPC | `*-rpc` | 集群内 `20100–20600`，**不对外暴露** |
+| 异步 | `transfer` | 健康检查 `:10800`，消费 RocketMQ |
 | 基础设施 | Postgres / Redis / RocketMQ | 集群内 DNS；**kind 下映射到本机 5432/6379/9876** |
 
 **Namespace**：`im-local`（见 `deploy/k8s/overlays/local/namespace.yaml`）
@@ -42,14 +42,13 @@
 | conversation-api | 10400 | 30400 | `http://localhost:10400` |
 | message-api | 10500 | 30500 | `http://localhost:10500` |
 | notification-api | 10600 | 30600 | `http://localhost:10600` |
-| push-api | 10700 | 30700 | `http://localhost:10700` |
-| cron | 10800 | 30800 | `http://localhost:10800/health` |
+| transfer | 10800 | 30800 | `http://localhost:10800/health` |
 | postgres | 5432 | 30432 | `localhost:5432`（`im/im`，库 `im`） |
 | redis | 6379 | 30637 | `localhost:6379` |
 | rocketmq-namesrv | 9876 | 30876 | `localhost:9876` |
 | rocketmq-broker | 10911 | 30911 | `localhost:10911`（管理/排障，业务连 NameServer） |
 
-RPC（`20100–20700`）在生成清单中为 **ClusterIP、无 NodePort**，仅 Pod 间通过服务名访问，例如 `message-rpc:20500`。
+RPC（`20100–20600`）在生成清单中为 **ClusterIP、无 NodePort**，仅 Pod 间通过服务名访问，例如 `message-rpc:20500`。
 
 **本机调试**：kind 集群下可直接连上表「本机访问」地址，与 `apps/*/etc/*.yaml` 中 `localhost` 一致，**无需** `make k8s-forward-infra`。非 kind 集群仍用 `make k8s-forward-infra` 或 `kubectl port-forward`。
 
@@ -94,7 +93,7 @@ im/gateway/gateway-api:dev
 im/user/user-api:dev
 im/user/user-rpc:dev
 …（各域 api + rpc）
-im/cron/cron:dev
+im/transfer/transfer:dev
 ```
 
 基础镜像（先构建一次）：
@@ -215,7 +214,7 @@ kubectl -n im-local rollout status deployment/gateway-api --timeout=120s
 
 - WebSocket：`ws://localhost:10000/gateway/v1/ws?token=<JWT>`
 - 用户 API：`http://localhost:10100`
-- Cron 健康：`http://localhost:10800/health`
+- Transfer 健康：`http://localhost:10800/health`
 
 ### 4.4 跳过重新构建镜像
 
@@ -229,7 +228,7 @@ SKIP_BUILD=1 make up
 
 ```bash
 make deploy SVC=message-rpc
-make deploy SVC=gateway-api:2,message-rpc,cron
+make deploy SVC=gateway-api:2,message-rpc,transfer
 make deploy SVC=gateway-api,message-rpc REPLICAS=1   # 未写 :N 的服务用同一副本数
 ```
 
@@ -356,7 +355,7 @@ kubectl -n kubernetes-dashboard create token admin-user
 **在 Dashboard 中查看 IM**：
 
 - 左上角 Namespace 选 **`im-local`**
-- **Workloads → Deployments**：`gateway-api`、`user-api`、`cron` 等
+- **Workloads → Deployments**：`gateway-api`、`user-api`、`transfer` 等
 - **Service**：NodePort / ClusterIP
 - **Pods → Logs**：查看业务日志
 - **Config Maps**：`gateway-api-config` 等

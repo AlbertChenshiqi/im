@@ -19,7 +19,7 @@ gen_rpc() {
 gen_api apps/user/api user.api
 gen_rpc apps/user/rpc user.proto
 
-for svc in group friend conversation message notification push; do
+for svc in group friend conversation message notification; do
   gen_api "apps/$svc/api" "${svc}.api"
   gen_rpc "apps/$svc/rpc" "${svc}.proto"
 done

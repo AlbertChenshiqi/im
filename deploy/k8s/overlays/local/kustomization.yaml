@@ -12,5 +12,4 @@ resources:
   - apps/conversation
   - apps/message
   - apps/notification
-  - apps/push
-  - apps/cron
+  - apps/transfer

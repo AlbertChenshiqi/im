@@ -84,5 +84,8 @@ service user-api {
 
 	@handler upsertDevice
 	post /devices (DeviceReq) returns (StatusResp)
+
+	@handler setOnline
+	post /online returns (StatusResp)
 }
 

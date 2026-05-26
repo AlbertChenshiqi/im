@@ -15,4 +15,9 @@ type Config struct {
 	MySQL struct {
 		DSN string
 	}
+	Redis struct {
+		Addr string
+	}
+	// OnlineTTLSeconds HTTP 心跳续期 online:{uid}（默认 300）；WebSocket 仍由 gateway 写入
+	OnlineTTLSeconds int `json:",optional"`
 }

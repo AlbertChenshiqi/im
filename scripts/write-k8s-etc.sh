@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/deploy/k8s/overlays/local/config"
 rm -rf "$OUT"
-mkdir -p "$OUT"/{gateway,user,friend,group,conversation,message,notification,push,cron}
+mkdir -p "$OUT"/{gateway,user,friend,group,conversation,message,notification,transfer}
 
 SECRET='dev-secret-change-in-production'
 
@@ -70,7 +70,6 @@ write_api group 10300
 write_api conversation 10400
 write_api message 10500
 write_api notification 10600
-write_api push 10700
 
 cat >"$OUT/user/user-rpc.yaml" <<EOF
 Name: user.rpc
@@ -87,11 +86,11 @@ write_rpc group 20300
 write_rpc conversation 20400
 write_rpc message 20500
 write_rpc notification 20600
-write_rpc push 20700
 
-cat >>"$OUT/push/push-rpc.yaml" <<EOF
-RedisStore:
+cat >>"$OUT/user/user-api.yaml" <<EOF
+Redis:
   Addr: ${REDIS}
+OnlineTTLSeconds: 300
 EOF
 
 cat >>"$OUT/message/message-rpc.yaml" <<EOF
@@ -124,13 +123,8 @@ Conversation:
   DirectRecentDays: 0
 EOF
 
-cat >>"$OUT/push/push-api.yaml" <<EOF
-Redis:
-  Addr: ${REDIS}
-EOF
-
-cat >"$OUT/cron/cron.yaml" <<EOF
-Name: cron
+cat >"$OUT/transfer/transfer.yaml" <<EOF
+Name: transfer
 HealthPort: 10800
 MySQL:
   DSN: im:im@tcp(mysql:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
@@ -139,7 +133,7 @@ Redis:
 RocketMQ:
   NameServer:
     - ${ROCKETMQ}
-Cron:
+Transfer:
   InboxMergeMs: 100
   OfflineMergeSec: 10
   MemberBatch: 500
@@ -192,7 +186,7 @@ KUST="$ROOT/deploy/k8s/overlays/local/kustomization.yaml"
   if [[ "${HOST_INFRA:-0}" != "1" ]]; then
     echo "  - infra"
   fi
-  for mod in gateway user friend group conversation message notification push cron; do
+  for mod in gateway user friend group conversation message notification transfer; do
     echo "  - apps/${mod}"
   done
   if [[ "${HOST_INFRA:-0}" != "1" ]]; then

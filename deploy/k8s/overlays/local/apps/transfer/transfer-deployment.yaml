@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transfer
+  labels:
+    app: transfer
+    app.kubernetes.io/name: transfer
+    app.kubernetes.io/part-of: im
+    app.kubernetes.io/component: transfer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transfer
+  template:
+    metadata:
+      labels:
+        app: transfer
+        app.kubernetes.io/name: transfer
+        app.kubernetes.io/component: transfer
+    spec:
+      containers:
+      - name: transfer
+        image: im/transfer/transfer:dev
+        imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/transfer"]
+        args: ["-f", "/etc/im/transfer/transfer.yaml"]
+        ports:
+        - containerPort: 10800
+          name: http
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 10800
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 10800
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/im/transfer
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: transfer-config

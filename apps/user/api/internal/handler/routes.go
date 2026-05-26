@@ -43,6 +43,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: user.UpsertDeviceHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodPost,
+				Path:    "/online",
+				Handler: user.SetOnlineHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodGet,
 				Path:    "/users/:id",
 				Handler: user.GetUserHandler(serverCtx),

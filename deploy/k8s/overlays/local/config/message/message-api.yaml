@@ -6,7 +6,7 @@ Auth:
   AccessExpire: 604800
 
 MySQL:
-  DSN: im:im@tcp(localhost:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
+  DSN: im:im@tcp(mysql:3306)/im?parseTime=true&charset=utf8mb4&loc=Local
 Log:
   ServiceName: message-api
   Mode: console

@@ -265,11 +265,22 @@ function renderMessage(msg: ChatMessage) {
 | `send_failed` | 下游 RPC 或业务失败（非成员、重复等） |
 | `message_too_large` | 帧过大 |
 
-### 5.3 心跳
+### 5.3 心跳与在线状态
+
+**WebSocket（推荐）**
 
 - 建议每 **60s** 发送：`{"type":"ping"}`，收到 `{"type":"pong"}`。
-- 用于续期在线状态 `online:{uid}`，避免仅收下行导致 TTL 过期。
+- 任意上行帧也会续期 `online:{uid}`，避免仅收下行导致 TTL 过期误走离线推送。
 - 服务端可能发 WebSocket 协议级 Ping，客户端应回复 Pong。
+
+**HTTP（无长连接时的可选续期）**
+
+```http
+POST /user/v1/online
+Authorization: Bearer <token>
+```
+
+响应：`{"status":"online"}`。续期 Redis `online:{uid}`（默认 TTL 300s）。**无需**按群 subscribe。
 
 ### 5.4 下行：新消息 `message`
 

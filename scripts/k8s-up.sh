@@ -80,7 +80,7 @@ echo "已部署到 namespace=${NS}"
 echo "  Gateway WS:  ws://localhost:10000/gateway/v1/ws  (kind NodePort 30000)"
 echo "  User API:    http://localhost:10100"
 echo "  Conversation: http://localhost:10400"
-echo "  Cron health: http://localhost:10800/health"
+echo "  Transfer health: http://localhost:10800/health"
 echo "  基础设施:   mysql localhost:3306  redis localhost:6379  rocketmq localhost:9876"
 if [[ "$HOST_INFRA" == "1" ]]; then
   echo "  （HOST_INFRA=1：基础设施在本机 Docker，Pod 经 host.docker.internal 访问）"
